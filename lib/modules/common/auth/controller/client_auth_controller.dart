@@ -73,7 +73,7 @@ class ClientAuthController extends GetxController {
           phone: phone.value,
           hostel: hostel.value,
           room: room.value,
-          balance: 0.0,
+          balance: 0,
           updatedAt: 0,
           deleted: false,
         );

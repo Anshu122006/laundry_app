@@ -28,13 +28,6 @@ class OrderStatusScreen extends StatelessWidget {
                 orderId: order.id,
                 date: CFormatter.getNamedDate(order.placedDate)!,
               ),
-              SizedBox(height: 30),
-              OrderStatusBody(
-                status: order.status,
-                statusBeforeCancelled: order.statusBeforeCancelled,
-                daysLeft: CDateHelper.getRemainingDays(order.deliveryDate),
-              ),
-              CLineDivider(),
               SizedBox(height: 10),
               GestureDetector(
                 onTap:
@@ -49,6 +42,14 @@ class OrderStatusScreen extends StatelessWidget {
                             : CColors.secondaryColor,
                   ),
                 ),
+              ),
+              SizedBox(height: 10),
+              CLineDivider(),
+              SizedBox(height: 30),
+              OrderStatusBody(
+                status: order.status,
+                statusBeforeCancelled: order.statusBeforeCancelled,
+                daysLeft: CDateHelper.getRemainingDays(order.deliveryDate),
               ),
             ],
           ),

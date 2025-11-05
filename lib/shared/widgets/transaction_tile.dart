@@ -21,6 +21,7 @@ class TransactionTile extends StatelessWidget {
             ? transaction.orderType!
             : "Not Set";
     String amount = "₹${transaction.amount.abs()}";
+    String balance = "₹${client?.balance ?? 0}";
     String date = DateFormat("dd/MM/yyyy hh:mm a").format(transaction.date);
     if (transaction.type == "removed") {
       amount = "- $amount";
@@ -49,6 +50,14 @@ class TransactionTile extends StatelessWidget {
               style: Theme.of(
                 context,
               ).textTheme.labelLarge!.copyWith(color: textColor, fontSize: 14),
+            ),
+            Text(
+              "Closing Balance: $balance",
+              style: Theme.of(context).textTheme.labelLarge!.copyWith(
+                color: textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

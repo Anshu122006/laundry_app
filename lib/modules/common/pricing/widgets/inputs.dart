@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:laundary_app/data/db_cloud/pricing_cloud_db.dart';
 import 'package:laundary_app/data/models/pricing.dart';
@@ -50,10 +51,7 @@ class PricingInputs {
                   FocusManager.instance.primaryFocus?.unfocus();
                   Get.back();
                   await PricingCloudDb.instance.updatePricing(
-                    pricing.copyWith(
-                      name: name.text,
-                      cost: double.tryParse(cost.text) ?? 0.0,
-                    ),
+                    pricing.copyWith(name: name.text, cost: cost.text),
                   );
                 },
                 child: Text("Confirm"),
@@ -116,9 +114,12 @@ class PricingInputs {
               const SizedBox(height: 6),
               TextField(
                 controller: cost,
-                decoration: InputDecoration(hintText: "Enter cost"),
+                decoration: const InputDecoration(hintText: "Enter cost"),
                 textInputAction: TextInputAction.done,
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.text,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
+                ],
               ),
               SizedBox(height: 12),
 
@@ -131,7 +132,7 @@ class PricingInputs {
                         id: "",
                         name: name.text,
                         type: type,
-                        cost: double.tryParse(cost.text) ?? 0.0,
+                        cost: cost.text,
                         priority: 0,
                         updatedAt: DateTime.now().millisecondsSinceEpoch,
                         deleted: false,

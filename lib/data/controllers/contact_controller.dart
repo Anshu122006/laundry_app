@@ -10,7 +10,14 @@ class ContactController extends GetxController {
   }
 
   Rx<Contact> contact =
-      Contact(id: "", email: "", facebook: "", instagram: "", whatsapp: "").obs;
+      Contact(
+        id: "",
+        email: "",
+        review: "",
+        map: "",
+        paymentLink: "",
+        whatsapp: "",
+      ).obs;
 
   static Future<void> initController() async {
     if (!Get.isRegistered<ContactController>()) {

@@ -77,6 +77,15 @@ class ClientScreenController extends GetxController {
     }
   }
 
+  Future<void> openWhattsapp(String phoneNumber) async {
+    final Uri whatsappUri = Uri(
+      scheme: 'https',
+      host: 'wa.me',
+      path: phoneNumber,
+    );
+    await launchUrl(whatsappUri, mode: LaunchMode.platformDefault);
+  }
+
   int indexof(Client client) {
     List<Client> clients =
         ClientController.instance.clients.map((c) => c.value).toList();

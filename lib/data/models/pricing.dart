@@ -4,7 +4,7 @@ class Pricing {
   String id;
   String name;
   String type;
-  double cost;
+  String cost;
   int priority;
   int updatedAt;
   bool deleted;
@@ -24,7 +24,7 @@ class Pricing {
       id: json["id"] ?? "",
       name: json["name"] ?? "",
       type: json["type"] ?? "",
-      cost: json["cost"]?.toDouble() ?? 0.0,
+      cost: json["cost"] ?? "0",
       priority: json["priority"] ?? 0,
       updatedAt: json["updatedAt"] ?? 0,
       deleted: json["deleted"] == 1 || json["deleted"] == true,
@@ -47,7 +47,7 @@ class Pricing {
     String? id,
     String? name,
     String? type,
-    double? cost,
+    String? cost,
     int? priority,
     int? updatedAt,
     bool? deleted,

@@ -18,7 +18,7 @@ class UpdateClientBalance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     TextEditingController balance = TextEditingController();
-    balance.text = "0";
+    balance.text = "";
 
     return SafeArea(
       child: Container(
@@ -31,7 +31,7 @@ class UpdateClientBalance extends StatelessWidget {
           color: Theme.of(context).scaffoldBackgroundColor,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // <-- THIS is important
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -52,9 +52,9 @@ class UpdateClientBalance extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: ElevatedButton(
                 onPressed: () async {
-                  double amount =
-                      (double.tryParse(balance.text) ?? 0.0) * (add ? 1 : -1);
-                  double newBalance = client.balance + amount;
+                  int amount =
+                      (int.tryParse(balance.text) ?? 0) * (add ? 1 : -1);
+                  int newBalance = client.balance + amount;
                   Get.back();
                   await ClientCloudDb.instance.updateClient(
                     client.copyWith(balance: newBalance),
@@ -64,6 +64,7 @@ class UpdateClientBalance extends StatelessWidget {
                       id: "",
                       type: amount >= 0 ? "added" : "removed",
                       amount: amount.abs(),
+                      curBal: newBalance,
                       client: client,
                       date: DateTime.now(),
                       updatedAt: 0,

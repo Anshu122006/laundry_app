@@ -7,7 +7,7 @@ class Client {
   final String phone;
   final String hostel;
   final String room;
-  final double balance;
+  final int balance;
   final int updatedAt;
   final bool deleted;
 
@@ -31,8 +31,8 @@ class Client {
       phone: json["phone"],
       hostel: json["hostel"],
       room: json["room"],
-      balance: json["balance"]?.toDouble()??0.0,
-      updatedAt: json["updatedAt"] ?? 0,
+      balance: json["balance"]?.toInt() ?? 0,
+      updatedAt: json["updatedAt"]?.toInt() ?? 0,
       deleted: json["deleted"] == 1 || json["deleted"] == true,
     );
   }
@@ -58,7 +58,7 @@ class Client {
     String? phone,
     String? hostel,
     String? room,
-    double? balance,
+    int? balance,
     int? updatedAt,
     bool? deleted,
   }) {

@@ -5,7 +5,8 @@ import 'package:laundary_app/data/models/client.dart';
 class LaundryTransaction {
   String id;
   String type; // "income" or "expense"
-  double amount;
+  int amount;
+  int curBal;
   DateTime date;
   String? orderType;
   Client? client;
@@ -16,6 +17,7 @@ class LaundryTransaction {
     required this.id,
     required this.type,
     required this.amount,
+    required this.curBal,
     required this.date,
     this.orderType,
     this.client,
@@ -27,7 +29,8 @@ class LaundryTransaction {
     return LaundryTransaction(
       id: json["id"] ?? "",
       type: json["type"] ?? "",
-      amount: (json["amount"] ?? 0).toDouble(),
+      amount: (json["amount"] ?? 0).tont(),
+      curBal: (json["curBal"] ?? 0).toInt(),
       date:
           json['date'] is Timestamp
               ? (json['date'] as Timestamp).toDate()
@@ -44,6 +47,7 @@ class LaundryTransaction {
       "id": id,
       "type": type,
       "amount": amount,
+      "curBal": curBal,
       "date": date,
       "orderType": orderType,
       "updatedAt": updatedAt,
@@ -55,7 +59,8 @@ class LaundryTransaction {
   LaundryTransaction copyWith({
     String? id,
     String? type,
-    double? amount,
+    int? amount,
+    int? curBal,
     DateTime? date,
     String? orderType,
     Client? client,
@@ -66,6 +71,7 @@ class LaundryTransaction {
       id: id ?? this.id,
       type: type ?? this.type,
       amount: amount ?? this.amount,
+      curBal: curBal ?? this.curBal,
       date: date ?? this.date,
       orderType: orderType ?? this.orderType,
       client: client ?? this.client,

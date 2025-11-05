@@ -74,17 +74,17 @@ class OrderDetailsController extends GetxController {
 
   Future<void> addDeliveryTransaction() async {
     Client? client = ClientController.instance.getClient(order.value.clientId);
-    double amount = order.value.cost - order.value.discount;
+    int amount = order.value.cost - order.value.discount;
+    int bal = (client?.balance ?? 0) - amount;
 
     if (client != null) {
-      await ClientCloudDb.instance.updateClient(
-        client.copyWith(balance: (client.balance - amount)),
-      );
+      await ClientCloudDb.instance.updateClient(client.copyWith(balance: bal));
     }
     LaundryTransaction transaction = LaundryTransaction(
       id: "",
       type: "removed",
       amount: amount,
+      curBal: bal,
       date: DateTime.now(),
       client: client,
       orderType: order.value.type,
@@ -106,12 +106,14 @@ class OrderDetailsController extends GetxController {
     } else {
       client = ClientController.instance.getClient(order.value.clientId);
     }
+    int bal = client?.balance ?? 0;
 
-    double amount = order.value.cost - order.value.discount;
+    int amount = order.value.cost - order.value.discount;
     LaundryTransaction transaction = LaundryTransaction(
       id: "",
       type: "cancelled",
       amount: amount,
+      curBal: bal,
       date: DateTime.now(),
       client: client,
       orderType: order.value.type,
@@ -133,12 +135,12 @@ class OrderDetailsController extends GetxController {
     await updateOrder(false);
   }
 
-  Future<void> setCost(double cost) async {
+  Future<void> setCost(int cost) async {
     order.value.cost = cost;
     await updateOrder(false);
   }
 
-  Future<void> setDiscount(double discount) async {
+  Future<void> setDiscount(int discount) async {
     if (order.value.cost - discount > 0) {
       order.value.discount = discount;
     } else {

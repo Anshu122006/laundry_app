@@ -14,29 +14,42 @@ class ContactHelper {
     await launchUrl(whatsappUri, mode: LaunchMode.platformDefault);
   }
 
-  static Future<void> openFacebook() async {
+  static Future<void> openReviewPage() async {
     final controller = Get.find<ContactController>();
-    String facebook = controller.contact.value.facebook;
-    final Uri facebookUri = Uri(
+    String appId = controller.contact.value.review;
+
+    final Uri playStoreUri = Uri(
       scheme: 'https',
-      host: 'www.facebook.com',
-      path: facebook,
+      host: 'play.google.com',
+      path: '/store/apps/details',
+      queryParameters: {
+        'id': appId,
+        'showAllReviews': 'true',
+      },
     );
 
-    await launchUrl(facebookUri, mode: LaunchMode.platformDefault);
+    await launchUrl(playStoreUri, mode: LaunchMode.platformDefault);
   }
 
-  static Future<void> openInstagram() async {
+
+  static Future<void> openMap() async {
     final controller = Get.find<ContactController>();
-    String instagram = controller.contact.value.instagram;
-    final Uri instagramUri = Uri(
+    String mapLink = controller.contact.value.map;
+
+    final Uri googleMapsUri = Uri(
       scheme: 'https',
-      host: 'www.instagram.com',
-      path: instagram,
+      host: 'www.google.com',
+      path: '/maps/search/',
+      queryParameters: {
+        'api': '1',
+        'query':
+            mapLink,
+      },
     );
 
-    await launchUrl(instagramUri, mode: LaunchMode.platformDefault);
+    await launchUrl(googleMapsUri, mode: LaunchMode.platformDefault);
   }
+
 
   static Future<void> openEmail() async {
     final controller = Get.find<ContactController>();

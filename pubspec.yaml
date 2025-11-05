@@ -1,7 +1,7 @@
 name: laundary_app
 description: "app for maa laundry"
 publish_to: "none"
-version: 1.0.0+2
+version: 1.0.0+6
 
 environment:
   sdk: ^3.7.0
@@ -33,6 +33,7 @@ dependencies:
 
   # to launch urls
   url_launcher: ^6.2.5
+  qr_flutter: ^4.1.0
 
   # to show date pickers
   syncfusion_flutter_datepicker: ^24.1.41

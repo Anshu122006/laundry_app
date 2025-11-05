@@ -14,9 +14,9 @@ class LaundryOrder {
   DateTime? pickupDate;
   DateTime? deliveryDate;
 
-  int clothes; // ✅ NEW FIELD
-  double discount;
-  double cost;
+  int clothes;
+  int discount;
+  int cost;
 
   int updatedAt;
   bool deleted;
@@ -48,14 +48,23 @@ class LaundryOrder {
       status: OrderStatus.pending,
       statusBeforeCancelled: OrderStatus.pending,
       clothes: 0,
-      discount: 0.0,
-      cost: 0.0,
+      discount: 0,
+      cost: 0,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
       deleted: false,
     );
   }
 
   factory LaundryOrder.fromJson(Map<String, dynamic> json) {
+    int toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return LaundryOrder(
       id: json['id'] ?? '',
       clientId: json['clientId'] ?? '',
@@ -63,12 +72,12 @@ class LaundryOrder {
       placedDate:
           json['placedDate'] is Timestamp
               ? (json['placedDate'] as Timestamp).toDate()
-              : DateTime.parse(json['placedDate']),
+              : DateTime.tryParse(json['placedDate'] ?? '') ?? DateTime.now(),
       status: OrderStatusX.fromString(json['status'] ?? ''),
       statusBeforeCancelled: OrderStatusX.fromString(
         json['statusBeforeCancelled'] ?? '',
       ),
-      clothes: json['clothes'] ?? 0,
+      clothes: toInt(json['clothes']),
       pickupAgentId: json['pickupAgentId'],
       deliverAgentId: json['deliverAgentId'],
       pickupDate:
@@ -83,9 +92,9 @@ class LaundryOrder {
               : (json['deliveryDate'] != null
                   ? DateTime.tryParse(json['deliveryDate'])
                   : null),
-      discount: (json['discount'] as num?)?.toDouble() ?? 0.0,
-      cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
-      updatedAt: json['updatedAt'] ?? 0,
+      discount: toInt(json['discount']),
+      cost: toInt(json['cost']),
+      updatedAt: toInt(json['updatedAt']),
       deleted: json['deleted'] == 1 || json['deleted'] == true,
     );
   }
@@ -138,13 +147,13 @@ class LaundryOrder {
     DateTime? placedDate,
     OrderStatus? status,
     OrderStatus? statusBeforeCancelled,
-    int? clothes, // ✅
+    int? clothes,
     String? pickupAgentId,
     String? deliverAgentId,
     DateTime? pickupDate,
     DateTime? deliveryDate,
-    double? discount,
-    double? cost,
+    int? discount,
+    int? cost,
     int? updatedAt,
     bool? deleted,
   }) {
@@ -156,7 +165,7 @@ class LaundryOrder {
       status: status ?? this.status,
       statusBeforeCancelled:
           statusBeforeCancelled ?? this.statusBeforeCancelled,
-      clothes: clothes ?? this.clothes, // ✅
+      clothes: clothes ?? this.clothes,
       pickupAgentId: pickupAgentId ?? this.pickupAgentId,
       deliverAgentId: deliverAgentId ?? this.deliverAgentId,
       pickupDate: pickupDate ?? this.pickupDate,
@@ -168,7 +177,6 @@ class LaundryOrder {
     );
   }
 }
-
 
 enum OrderStatus { pending, picked, washing, ready, delivered, cancelled }
 

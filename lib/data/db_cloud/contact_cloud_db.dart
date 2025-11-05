@@ -24,15 +24,17 @@ class ContactCloudDb {
   Future<void> updateContacts({
     required String id,
     String? whatsapp,
-    String? facebook,
-    String? instagram,
+    String? review,
+    String? map,
+    String? paymentLink,
     String? email,
   }) async {
     final Map<String, dynamic> updates = {};
 
     if (whatsapp != null) updates['whatsapp'] = whatsapp;
-    if (facebook != null) updates['facebook'] = facebook;
-    if (instagram != null) updates['instagram'] = instagram;
+    if (review != null) updates['review'] = review;
+    if (map != null) updates['map'] = map;
+    if (paymentLink != null) updates['paymentLink'] = paymentLink;
     if (email != null) updates['email'] = email;
 
     ContactController.instance.syncData();

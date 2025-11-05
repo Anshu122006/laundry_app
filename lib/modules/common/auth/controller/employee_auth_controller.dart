@@ -67,7 +67,7 @@ class EmployeeAuthController extends GetxController {
       );
 
       final employee = await EmployeeCloudDb.instance.getEmployee(email.value);
-      if (employee == null || employee.deleted == true) {
+      if (employee == null) {
         await AuthServices.instance.deleteCurrentUser();
         CDeviceHelper.showSnackbar(
           "Error",
@@ -78,6 +78,17 @@ class EmployeeAuthController extends GetxController {
       }
 
       if (!credential.user!.emailVerified) {
+        // --- Bypass verification for Play Console test account ---
+        if (email.value.trim().toLowerCase() == "anshu2006dev@gmail.com" &&
+            password.value.trim() == "testuser123") {
+          // Skip verification and continue directly to app
+          await AuthController.instance.onLogin(UserType.employee, email.value);
+          await Get.offAllNamed(AppRoutes.employeeNav);
+          isLoading.value = false;
+          return;
+        }
+        // ---------------------------------------------------------
+
         final box = GetStorage();
         int sentAt = box.read("sentAt") ?? 0;
 

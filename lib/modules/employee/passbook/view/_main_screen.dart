@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:laundary_app/core/constants/colors.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
 import 'package:laundary_app/modules/employee/passbook/controller/passbook_controller.dart';
-import 'package:laundary_app/modules/employee/passbook/widgets/add_amount_bottomsheet.dart';
 import 'package:laundary_app/modules/employee/passbook/widgets/date_picker_helper.dart';
 import 'package:laundary_app/modules/employee/passbook/widgets/transactionn_history.dart';
 import 'package:laundary_app/shared/widgets/back_button.dart';
@@ -70,7 +69,7 @@ class PassbookScreen extends StatelessWidget {
                     ),
                     Center(
                       child: SizedBox(
-                        width: 300,
+                        width: CDeviceHelper.getScreenWidth() * 0.9,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -112,50 +111,16 @@ class PassbookScreen extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                RichText(
-                                  text: TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: "Added",
-                                        style:
-                                            Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
-                                      ),
-                                      TextSpan(
-                                        text: " (Unregistered Users)",
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.labelMedium!.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          color:
-                                              CDeviceHelper.isDarkMode()
-                                                  ? CColors.white
-                                                  : CColors.black,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: " : ",
-                                        style:
-                                            Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
-                                      ),
-                                    ],
-                                  ),
+                                Text(
+                                  "Removed (Ordered):   ",
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
                                 ),
-                                GestureDetector(
-                                  onTap: () {
-                                    Get.bottomSheet(AddAmountBottomSheet());
-                                  },
-                                  child: Obx(
-                                    () => Text(
-                                      "₹${controller.unregisteredAdded.value}",
-                                      style:
-                                          Theme.of(
-                                            context,
-                                          ).textTheme.titleMedium,
-                                    ),
+                                Obx(
+                                  () => Text(
+                                    "₹${controller.removedOrdered.value}",
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
                                   ),
                                 ),
                               ],
@@ -164,13 +129,13 @@ class PassbookScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  "Total Removed:   ",
+                                  "Removed (Unordered):   ",
                                   style:
                                       Theme.of(context).textTheme.titleMedium,
                                 ),
                                 Obx(
                                   () => Text(
-                                    "₹${controller.removed.value}",
+                                    "₹${controller.removedUnordered.value}",
                                     style:
                                         Theme.of(context).textTheme.titleMedium,
                                   ),
@@ -187,7 +152,7 @@ class PassbookScreen extends StatelessWidget {
                                 ),
                                 Obx(
                                   () => Text(
-                                    "₹${controller.added.value - controller.removed.value}",
+                                    "₹${controller.added.value - controller.removedOrdered.value - controller.removedUnordered.value}",
                                     style:
                                         Theme.of(context).textTheme.titleMedium,
                                   ),
@@ -242,7 +207,7 @@ class PassbookScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    SizedBox(height: 100),
+                    SizedBox(height: 140),
                   ],
                 ),
               ),

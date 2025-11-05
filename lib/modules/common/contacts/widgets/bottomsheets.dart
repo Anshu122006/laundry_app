@@ -6,7 +6,7 @@ class ContactEditBottomSheet {
     required BuildContext context,
     required String fieldName,
     required String initialValue,
-    required Future<void> Function(String) onConfirm
+    required Future<void> Function(String) onConfirm,
   }) {
     final TextEditingController controller = TextEditingController(
       text: initialValue,
@@ -47,14 +47,15 @@ class ContactEditBottomSheet {
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
-                      onPressed: () async{
+                      onPressed: () async {
                         FocusManager.instance.primaryFocus?.unfocus();
                         Get.back(); // close bottom sheet
-                       await onConfirm(controller.text.trim());
+                        await onConfirm(controller.text.trim());
                       },
                       child: const Text("Confirm"),
                     ),
                   ),
+                  SizedBox(height: 30),
                 ],
               ),
             ),

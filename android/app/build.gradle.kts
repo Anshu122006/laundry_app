@@ -33,22 +33,34 @@ android {
         versionName = flutter.versionName
     }
 
+    // Force Kotlin versions to avoid mismatch issues
     configurations.all {
-    resolutionStrategy {
-        force("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.0")
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.0")
         }
     }
 
-
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    // Packaging options for 16 KB page alignment (required for Android 15+ devices)
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
+    // Enable edge-to-edge layout support on Android 15+
+    buildFeatures {
+        viewBinding = true
     }
 
     signingConfigs {
@@ -59,13 +71,23 @@ android {
             storePassword = keystoreProperties["storePassword"] as String
         }
     }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now,
-            // so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Use the release keystore configuration
             signingConfig = signingConfigs.getByName("release")
+
+            // Enable code shrinking and resource optimization for production
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }

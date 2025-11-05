@@ -25,7 +25,6 @@ class ClientSignupScreen extends StatelessWidget {
           try {
             await AuthServices.instance.signoutFromGoogle();
             await AuthServices.instance.signoutFromFirebase();
-
             Get.back();
           } catch (e) {
             Get.back();
@@ -49,7 +48,12 @@ class ClientSignupScreen extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 30, left: 15),
                             child: IconButton(
-                              onPressed: () => Get.back(),
+                              onPressed: () async {
+                                await AuthServices.instance.signoutFromGoogle();
+                                await AuthServices.instance
+                                    .signoutFromFirebase();
+                                Get.back();
+                              },
                               icon: Icon(
                                 FontAwesomeIcons.arrowLeft,
                                 color:

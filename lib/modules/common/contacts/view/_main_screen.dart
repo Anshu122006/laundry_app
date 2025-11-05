@@ -4,6 +4,7 @@ import 'package:laundary_app/data/controllers/contact_controller.dart';
 import 'package:laundary_app/data/db_cloud/contact_cloud_db.dart';
 import 'package:laundary_app/modules/common/contacts/widgets/bottomsheets.dart';
 import 'package:laundary_app/modules/common/contacts/widgets/contact_helper.dart';
+import 'package:laundary_app/modules/common/contacts/widgets/qr_code.dart';
 import 'package:laundary_app/shared/widgets/back_button.dart';
 import 'package:laundary_app/modules/common/contacts/widgets/contact_row.dart';
 
@@ -42,77 +43,6 @@ class ContactScreen extends StatelessWidget {
                         spacing: 12,
                         children: [
                           ContactRow(
-                            icon: FontAwesomeIcons.whatsapp,
-                            name: "WhatsApp",
-                            value: "+91 ${contactdata.contact.value.whatsapp}",
-                            onTap: ContactHelper.openWhattsapp,
-                            onEdit: () {
-                              final id =
-                                  ContactController.instance.contact.value.id;
-                              ContactEditBottomSheet.show(
-                                context: context,
-                                fieldName: "Whattsapp",
-                                initialValue:
-                                    contactdata.contact.value.whatsapp,
-                                onConfirm: (value) async {
-                                  await ContactCloudDb.instance.updateContacts(
-                                    id: id,
-                                    whatsapp: value,
-                                  );
-                                  await ContactController.instance.syncData();
-                                },
-                              );
-                            },
-                          ),
-                          ContactRow(
-                            icon: FontAwesomeIcons.facebook,
-                            name: "Facebook",
-                            value: contactdata.contact.value.facebook,
-                            onTap: ContactHelper.openFacebook,
-                            onEdit: () {
-                              final id =
-                                  ContactController.instance.contact.value.id;
-                              ContactEditBottomSheet.show(
-                                context: context,
-                                fieldName: "Facebook",
-                                initialValue:
-                                    contactdata.contact.value.facebook,
-                                onConfirm: (value) async {
-                                  await ContactCloudDb.instance.updateContacts(
-                                    id: id,
-                                    facebook: value,
-                                  );
-                                  await ContactController.instance.syncData();
-                                },
-                              );
-                            },
-                          ),
-
-                          ContactRow(
-                            icon: FontAwesomeIcons.instagram,
-                            name: "Instagram",
-                            value: contactdata.contact.value.instagram,
-                            onTap: ContactHelper.openInstagram,
-                            onEdit: () {
-                              final id =
-                                  ContactController.instance.contact.value.id;
-                              ContactEditBottomSheet.show(
-                                context: context,
-                                fieldName: "Instagram",
-                                initialValue:
-                                    contactdata.contact.value.instagram,
-                                onConfirm: (value) async {
-                                  await ContactCloudDb.instance.updateContacts(
-                                    id: id,
-                                    instagram: value,
-                                  );
-                                  await ContactController.instance.syncData();
-                                },
-                              );
-                            },
-                          ),
-
-                          ContactRow(
                             icon: FontAwesomeIcons.envelope,
                             name: "Email",
                             value: contactdata.contact.value.email,
@@ -135,8 +65,78 @@ class ContactScreen extends StatelessWidget {
                             },
                           ),
 
-                          // SizedBox(height: 10),
-                          // FeedbackForm(),
+                          ContactRow(
+                            icon: FontAwesomeIcons.whatsapp,
+                            name: "WhatsApp",
+                            value: "+91 ${contactdata.contact.value.whatsapp}",
+                            onTap: ContactHelper.openWhattsapp,
+                            onEdit: () {
+                              final id =
+                                  ContactController.instance.contact.value.id;
+                              ContactEditBottomSheet.show(
+                                context: context,
+                                fieldName: "Whattsapp",
+                                initialValue:
+                                    contactdata.contact.value.whatsapp,
+                                onConfirm: (value) async {
+                                  await ContactCloudDb.instance.updateContacts(
+                                    id: id,
+                                    whatsapp: value,
+                                  );
+                                  await ContactController.instance.syncData();
+                                },
+                              );
+                            },
+                          ),
+
+                          ContactRow(
+                            icon: FontAwesomeIcons.mapLocationDot,
+                            name: "Location",
+                            value: "reach us",
+                            onTap: ContactHelper.openMap,
+                            onEdit: () {
+                              final id =
+                                  ContactController.instance.contact.value.id;
+                              ContactEditBottomSheet.show(
+                                context: context,
+                                fieldName: "Location",
+                                initialValue: contactdata.contact.value.map,
+                                onConfirm: (value) async {
+                                  await ContactCloudDb.instance.updateContacts(
+                                    id: id,
+                                    map: value,
+                                  );
+                                  await ContactController.instance.syncData();
+                                },
+                              );
+                            },
+                          ),
+
+                          ContactRow(
+                            icon: FontAwesomeIcons.rankingStar,
+                            name: "Review",
+                            value: "rate us on playstore",
+                            onTap: ContactHelper.openReviewPage,
+                            onEdit: () {
+                              final id =
+                                  ContactController.instance.contact.value.id;
+                              ContactEditBottomSheet.show(
+                                context: context,
+                                fieldName: "Rate Us",
+                                initialValue: contactdata.contact.value.review,
+                                onConfirm: (value) async {
+                                  await ContactCloudDb.instance.updateContacts(
+                                    id: id,
+                                    review: value,
+                                  );
+                                  await ContactController.instance.syncData();
+                                },
+                              );
+                            },
+                          ),
+
+                          SizedBox(height: 30),
+                          QRCode(),
                         ],
                       ),
                     ),

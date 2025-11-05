@@ -3,15 +3,17 @@ import "dart:core";
 class Contact {
   final String id;
   final String whatsapp;
-  final String facebook;
-  final String instagram;
+  final String review;
+  final String map;
+  final String paymentLink;
   final String email;
 
   Contact({
     required this.id,
     required this.whatsapp,
-    required this.facebook,
-    required this.instagram,
+    required this.review,
+    required this.map,
+    required this.paymentLink,
     required this.email,
   });
 
@@ -19,8 +21,9 @@ class Contact {
     return Contact(
       id: json['id'] ?? "",
       whatsapp: json['whatsapp'] ?? "",
-      facebook: json['facebook'] ?? "",
-      instagram: json['instagram'] ?? "",
+      review: json['review'] ?? "",
+      map: json['map'] ?? "",
+      paymentLink: json['paymentLink'] ?? "",
       email: json['email'] ?? "",
     );
   }
@@ -29,8 +32,9 @@ class Contact {
     return {
       'id': id,
       'whatsapp': whatsapp,
-      'facebook': facebook,
-      'instagram': instagram,
+      'review': review,
+      'map': map,
+      'paymentLink': paymentLink,
       'email': email,
     };
   }

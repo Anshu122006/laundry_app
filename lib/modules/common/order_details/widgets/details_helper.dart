@@ -94,7 +94,7 @@ class DetailsHelper {
 
   static Widget getPricingTile({
     required String name,
-    required double value,
+    required int value,
     bool isTotal = false,
   }) {
     return Row(
@@ -268,7 +268,7 @@ class DetailsHelper {
                 onPressed: () async {
                   FocusManager.instance.primaryFocus?.unfocus();
                   Get.back();
-                  controller.setDiscount(double.tryParse(discount.text) ?? 0);
+                  controller.setDiscount(int.tryParse(discount.text) ?? 0);
                 },
                 child: Text("Confirm"),
               ),
@@ -313,7 +313,7 @@ class DetailsHelper {
                 onPressed: () async {
                   FocusManager.instance.primaryFocus?.unfocus();
                   Get.back();
-                  controller.setCost(double.tryParse(cost.text) ?? 0);
+                  controller.setCost(int.tryParse(cost.text) ?? 0);
                 },
                 child: Text("Confirm"),
               ),
