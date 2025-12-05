@@ -9,6 +9,10 @@ import 'package:laundary_app/data/db_cloud/employee_cloud_db.dart';
 import 'package:laundary_app/data/services/auth_services.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
+import 'package:laundary_app/modules/splash/no_internet.dart';
+
+const String kSavedEmail = "savedEmail";
+const String kSavedUserType = "savedUserType";
 
 class EmployeeAuthController extends GetxController {
   RxString email = "".obs;
@@ -82,7 +86,14 @@ class EmployeeAuthController extends GetxController {
         if (email.value.trim().toLowerCase() == "anshu2006dev@gmail.com" &&
             password.value.trim() == "testuser123") {
           // Skip verification and continue directly to app
+          // Inside signin() after successful verified login
           await AuthController.instance.onLogin(UserType.employee, email.value);
+
+          // Save to GetStorage
+          final box = GetStorage();
+          box.write(kSavedEmail, email.value);
+          box.write(kSavedUserType, "employee");
+
           await Get.offAllNamed(AppRoutes.employeeNav);
           isLoading.value = false;
           return;
@@ -101,12 +112,24 @@ class EmployeeAuthController extends GetxController {
         } else {
           await AuthServices.instance.deleteCurrentUser();
           await Get.offAllNamed(AppRoutes.signin);
-          throw "Email not verified";
+          CDeviceHelper.showSnackbar(
+            "Error",
+            "Email not verified",
+            CIcons.errorCross,
+          );
         }
       }
 
       await AuthController.instance.onLogin(UserType.employee, email.value);
+
+      // Save to GetStorage
+      final box = GetStorage();
+      box.write(kSavedEmail, email.value);
+      box.write(kSavedUserType, "employee");
+
       await Get.offAllNamed(AppRoutes.employeeNav);
+      isLoading.value = false;
+      return;
     } on FirebaseAuthException {
       try {
         await AuthServices.instance.signupEmployee(email.value, password.value);
@@ -154,40 +177,96 @@ class EmployeeAuthController extends GetxController {
   // To handle current user if not signed out
   Future handleCurrentUser() async {
     isLoading.value = true;
+    final box = GetStorage();
+
+    final savedEmail = box.read(kSavedEmail);
+    final savedType = box.read(kSavedUserType);
+
     try {
-      final user = AuthServices.instance.getCurrentUser();
-      if (user != null) {
-        if (!user.emailVerified) {
-          final box = GetStorage();
-          int sentAt = box.read("sentAt") ?? 0;
-          int timePassed = DateTime.now().millisecondsSinceEpoch - sentAt;
-          if (timePassed < Duration(minutes: 1).inMilliseconds) {
-            remainingSeconds.value = verifyDuration * 1000 - timePassed;
-            startTimer();
-
-            await Get.offAllNamed(AppRoutes.emailVerification);
-          } else {
-            await AuthServices.instance.deleteCurrentUser();
-
-            isLoading.value = false;
-            await Get.offAllNamed(AppRoutes.signin);
-          }
-        } else {
-          await AuthController.instance.onLogin(UserType.employee, user.email);
-          await Get.offAllNamed(AppRoutes.employeeNav);
-        }
-      } else {
+      if (savedEmail == null || savedType != "employee") {
         isLoading.value = false;
         await Get.toNamed(AppRoutes.employeeSigninForm);
+        return;
       }
+
+      await Future.delayed(Duration(milliseconds: 300));
+      final user = AuthServices.instance.getCurrentUser();
+
+      bool firebaseOk = true;
+      try {
+        await user?.reload();
+      } catch (_) {
+        firebaseOk = false;
+      }
+
+      if (!firebaseOk) {
+        isLoading.value = false;
+
+        CDeviceHelper.showSnackbar(
+          "No Internet",
+          "Waiting for connection...",
+          CIcons.errorCross,
+        );
+        Get.to(() => NoInternetScreen());
+        return;
+      }
+
+      await Future.delayed(Duration(milliseconds: 300));
+      final refreshedUser = AuthServices.instance.getCurrentUser();
+
+      if (refreshedUser == null) {
+        box.remove(kSavedEmail);
+        box.remove(kSavedUserType);
+
+        isLoading.value = false;
+        await Get.offAllNamed(AppRoutes.signin);
+
+        CDeviceHelper.showSnackbar(
+          "Error",
+          "Your session expired. Please sign in again.",
+          CIcons.errorCross,
+        );
+        return;
+      }
+
+      if (!refreshedUser.emailVerified) {
+        int sentAt = box.read("sentAt") ?? 0;
+        int timePassed = DateTime.now().millisecondsSinceEpoch - sentAt;
+
+        if (timePassed < Duration(seconds: verifyDuration).inMilliseconds) {
+          remainingSeconds.value = verifyDuration - timePassed ~/ 1000;
+          startTimer();
+
+          isLoading.value = false;
+          await Get.offAllNamed(AppRoutes.emailVerification);
+          return;
+        } else {
+          await AuthServices.instance.deleteCurrentUser();
+          box.remove(kSavedEmail);
+          box.remove(kSavedUserType);
+
+          isLoading.value = false;
+          await Get.offAllNamed(AppRoutes.signin);
+          return;
+        }
+      }
+
+      await AuthController.instance.onLogin(UserType.employee, savedEmail);
+      isLoading.value = false;
+      await Get.offAllNamed(AppRoutes.employeeNav);
     } catch (e) {
+      isLoading.value = false;
+
       await AuthServices.instance.signoutFromFirebase();
+      box.remove(kSavedEmail);
+      box.remove(kSavedUserType);
 
       Get.offAllNamed(AppRoutes.signin);
+
       Future.delayed(Duration(milliseconds: 300), () {
         CDeviceHelper.showSnackbar(
           "Error",
-          "Some error occured while trying to sign-in",
+          "Some error occurred while trying to sign in",
           CIcons.errorCross,
         );
       });

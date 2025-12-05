@@ -81,7 +81,7 @@ class ClientScreenController extends GetxController {
     final Uri whatsappUri = Uri(
       scheme: 'https',
       host: 'wa.me',
-      path: phoneNumber,
+      path: "+91$phoneNumber",
     );
     await launchUrl(whatsappUri, mode: LaunchMode.platformDefault);
   }

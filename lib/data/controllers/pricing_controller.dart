@@ -18,7 +18,6 @@ class PricingController extends GetxController {
       if (!Get.isRegistered<PricingController>()) {
         Get.put(PricingController(), permanent: true);
       }
-      // List<Pricing> plist = await PricingLocalDb.instance.getAllPricing();
       List<Pricing> plist = await PricingCloudDb.instance.getAllPricings();
       PricingController.instance.pricings.assignAll(
         plist.map((pricing) => pricing.obs).toList(),
@@ -29,7 +28,6 @@ class PricingController extends GetxController {
   }
 
   Future<void> updateData() async {
-    // List<Pricing> plist = await PricingLocalDb.instance.getAllPricing();
     List<Pricing> plist = await PricingCloudDb.instance.getAllPricings();
     pricings.assignAll(plist.map((pricing) => pricing.obs).toList());
   }
@@ -88,7 +86,7 @@ class PricingController extends GetxController {
       if (pricings[i].value.priority == pricing.priority) {
         Pricing o = pricings[i].value;
         pricings[i].value = o.copyWith(priority: o.priority + 1);
-         await PricingCloudDb.instance.updatePricing(pricings[i].value);
+        await PricingCloudDb.instance.updatePricing(pricings[i].value);
       } else if (pricings[i].value.priority == pricing.priority + 1) {
         Pricing o = pricings[i].value;
         pricings[i].value = o.copyWith(priority: o.priority - 1);

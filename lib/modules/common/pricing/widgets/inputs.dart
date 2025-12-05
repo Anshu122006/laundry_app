@@ -41,7 +41,10 @@ class PricingInputs {
               controller: cost,
               decoration: InputDecoration(hintText: "Enter new cost"),
               textInputAction: TextInputAction.done,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.text,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
+              ],
             ),
             SizedBox(height: 10),
             Align(

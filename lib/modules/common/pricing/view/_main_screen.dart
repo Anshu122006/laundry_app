@@ -19,6 +19,7 @@ class PricingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool canEdit = AuthController.instance.userType.value == UserType.admin;
+    print(PricingController.instance.pricings);
 
     return Scaffold(
       body: LayoutBuilder(
@@ -103,7 +104,7 @@ class PricingScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.labelMedium,
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 100),
                       ],
                     ),
                   ),

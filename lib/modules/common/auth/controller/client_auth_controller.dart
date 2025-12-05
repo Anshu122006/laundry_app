@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/app/routes.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
@@ -6,6 +7,10 @@ import 'package:laundary_app/data/models/client.dart';
 import 'package:laundary_app/data/services/auth_services.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
+import 'package:laundary_app/modules/splash/no_internet.dart';
+
+const String kSavedEmail = "savedEmail";
+const String kSavedUserType = "savedUserType";
 
 class ClientAuthController extends GetxController {
   RxString name = "".obs;
@@ -16,7 +21,6 @@ class ClientAuthController extends GetxController {
 
   var isLoading = false.obs;
 
-  // sign in to account
   Future<void> signin() async {
     isLoading.value = true;
     try {
@@ -38,6 +42,10 @@ class ClientAuthController extends GetxController {
           );
         });
       } else {
+        final box = GetStorage();
+        box.write(kSavedEmail, user.email);
+        box.write(kSavedUserType, "client");
+
         await AuthController.instance.onLogin(UserType.client, user.email);
 
         Get.offAllNamed(AppRoutes.clientNav);
@@ -53,7 +61,6 @@ class ClientAuthController extends GetxController {
       CDeviceHelper.showSnackbar(
         "Error",
         "Some error occured while trying to sign-in",
-        // e.toString(),
         CIcons.errorCross,
       );
     } finally {
@@ -79,6 +86,11 @@ class ClientAuthController extends GetxController {
         );
 
         await ClientCloudDb.instance.addClient(client, true);
+
+        final box = GetStorage();
+        box.write(kSavedEmail, email.value);
+        box.write(kSavedUserType, "client");
+
         await AuthController.instance.onLogin(UserType.client, email.value);
 
         Get.offAllNamed(AppRoutes.clientNav);
@@ -89,7 +101,6 @@ class ClientAuthController extends GetxController {
       CDeviceHelper.showSnackbar(
         "Error",
         "Some error occured while trying to sign-up",
-        // e.toString(),
         CIcons.errorCross,
       );
     } finally {
@@ -111,34 +122,105 @@ class ClientAuthController extends GetxController {
       return {"isvalid": false, "error": "Room number can't be empty"};
     }
     if (phone.value == "") {
-      return {"isvalid": false, "error": "Phone number cant be empty "};
+      return {"isvalid": false, "error": "Phone number cant be empty"};
     }
     if (phone.value.length != 10) {
-      return {"isvalid": false, "error": "Invalid phone number "};
+      return {"isvalid": false, "error": "Invalid phone number"};
     }
-
     return {"isvalid": true, "error": ""};
   }
 
-  // Future<void> handleCurrentUser() async {
-  //   final user = AuthServices.instance.getCurrentUser();
-  //   if (user != null) {
-  //     Client? client = await ClientCloudDb.instance.getClient(user.email);
-  //     if (client != null) {
-  //       await AuthController.instance.onLogin(UserType.client, user.email);
-  //       await Get.offAllNamed(AppRoutes.clientNav);
-  //     } else {
-  //       await AuthServices.instance.signoutFromGoogle();
-  //       await AuthServices.instance.signoutFromFirebase();
+  Future<void> handleCurrentUser() async {
+    isLoading.value = true;
+    final box = GetStorage();
+    final savedEmail = box.read(kSavedEmail);
+    final savedType = box.read(kSavedUserType);
 
-  //       final employeeController = Get.find<EmployeeAuthController>();
-  //       await employeeController.handleCurrentUser();
+    try {
+      if (savedEmail == null || savedType != "client") {
+        isLoading.value = false;
+        await Get.offAllNamed(AppRoutes.signin);
+        return;
+      }
 
-  //       return;
-  //       // await Get.offAllNamed(AppRoutes.signin);
-  //     }
-  //   } else {
-  //     await Get.offAllNamed(AppRoutes.signin);
-  //   }
-  // }
+      await Future.delayed(Duration(milliseconds: 300));
+      final user = AuthServices.instance.getCurrentUser();
+
+      bool firebaseOk = true;
+      try {
+        await user.getCurrentUser()?.reload();
+      } catch (_) {
+        firebaseOk = false;
+      }
+
+      if (!firebaseOk) {
+        isLoading.value = false;
+
+        CDeviceHelper.showSnackbar(
+          "No Internet",
+          "Waiting for connection...",
+          CIcons.errorCross,
+        );
+
+        Get.to(() => NoInternetScreen());
+        return;
+      }
+
+      final refreshedUser = AuthServices.instance.getCurrentUser();
+
+      if (refreshedUser == null) {
+        box.remove(kSavedEmail);
+        box.remove(kSavedUserType);
+
+        isLoading.value = false;
+        await Get.offAllNamed(AppRoutes.signin);
+
+        CDeviceHelper.showSnackbar(
+          "Error",
+          "Your session expired. Please sign in again.",
+          CIcons.errorCross,
+        );
+        return;
+      }
+
+      Client? client = await ClientCloudDb.instance.getClient(
+        refreshedUser.email,
+      );
+
+      if (client == null) {
+        box.remove(kSavedEmail);
+        box.remove(kSavedUserType);
+
+        await AuthServices.instance.signoutFromGoogle();
+        await AuthServices.instance.signoutFromFirebase();
+
+        isLoading.value = false;
+        await Get.offAllNamed(AppRoutes.signin);
+        return;
+      }
+
+      await AuthController.instance.onLogin(UserType.client, savedEmail);
+
+      isLoading.value = false;
+      await Get.offAllNamed(AppRoutes.clientNav);
+    } catch (e) {
+      isLoading.value = false;
+
+      await AuthServices.instance.signoutFromGoogle();
+      await AuthServices.instance.signoutFromFirebase();
+
+      box.remove(kSavedEmail);
+      box.remove(kSavedUserType);
+
+      Get.offAllNamed(AppRoutes.signin);
+
+      Future.delayed(Duration(milliseconds: 300), () {
+        CDeviceHelper.showSnackbar(
+          "Error",
+          "Some error occurred while trying to sign in",
+          CIcons.errorCross,
+        );
+      });
+    }
+  }
 }

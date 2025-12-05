@@ -29,7 +29,7 @@ class LaundryTransaction {
     return LaundryTransaction(
       id: json["id"] ?? "",
       type: json["type"] ?? "",
-      amount: (json["amount"] ?? 0).tont(),
+      amount: (json["amount"] ?? 0).toInt(),
       curBal: (json["curBal"] ?? 0).toInt(),
       date:
           json['date'] is Timestamp

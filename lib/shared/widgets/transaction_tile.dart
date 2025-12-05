@@ -21,7 +21,7 @@ class TransactionTile extends StatelessWidget {
             ? transaction.orderType!
             : "Not Set";
     String amount = "₹${transaction.amount.abs()}";
-    String balance = "₹${client?.balance ?? 0}";
+    String balance = "₹${transaction.curBal}";
     String date = DateFormat("dd/MM/yyyy hh:mm a").format(transaction.date);
     if (transaction.type == "removed") {
       amount = "- $amount";

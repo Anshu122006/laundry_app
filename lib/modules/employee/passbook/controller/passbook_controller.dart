@@ -14,7 +14,10 @@ class PassbookScreenController extends GetxController {
       TransactionController.instance.transactions,
       (_) => getRemovedUnordered(),
     );
-    ever(TransactionController.instance.transactions, (_) => getRemovedOrdered());
+    ever(
+      TransactionController.instance.transactions,
+      (_) => getRemovedOrdered(),
+    );
 
     startDate.value = DateTime.now().subtract(Duration(days: 7));
     endDate.value = DateTime.now().add(Duration(days: 1));
@@ -86,7 +89,7 @@ class PassbookScreenController extends GetxController {
             )
             .toList();
     int removedUnordered = transactions
-        .where((t) => t.type == "remove" && t.orderType == "")
+        .where((t) => t.type == "removed" && t.orderType == "")
         .fold(0, (sum, t) => sum + t.amount);
 
     this.removedUnordered.value = removedUnordered;
@@ -106,7 +109,7 @@ class PassbookScreenController extends GetxController {
             )
             .toList();
     int removedOrdered = transactions
-        .where((t) => t.type == "remove" && t.orderType != "")
+        .where((t) => t.type == "removed" && t.orderType != "")
         .fold(0, (sum, t) => sum + t.amount);
 
     this.removedOrdered.value = removedOrdered;

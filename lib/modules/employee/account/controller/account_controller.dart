@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/app/routes.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
@@ -6,6 +7,9 @@ import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/db_cloud/employee_cloud_db.dart';
 import 'package:laundary_app/data/models/employee.dart';
 import 'package:laundary_app/data/services/auth_services.dart';
+
+const String kSavedEmail = "savedEmail";
+const String kSavedUserType = "savedUserType";
 
 class EmployeeAccountController extends GetxController {
   @override
@@ -83,8 +87,11 @@ class EmployeeAccountController extends GetxController {
   Future signout() async {
     try {
       await AuthServices.instance.signoutFromFirebase();
-
       await AuthController.instance.onLogout();
+
+      final box = GetStorage();
+      box.remove(kSavedEmail);
+      box.remove(kSavedUserType);
 
       Get.offAllNamed(AppRoutes.signin);
       await Future.delayed(Duration(seconds: 0));
@@ -94,7 +101,7 @@ class EmployeeAccountController extends GetxController {
         CIcons.successCheck,
       );
     } catch (e) {
-      await Get.offAllNamed(AppRoutes.signin);
+      // await Get.offAllNamed(AppRoutes.signin);
       await Future.delayed(Duration(seconds: 0));
       CDeviceHelper.showSnackbar("Error", e.toString(), CIcons.errorCross);
     }

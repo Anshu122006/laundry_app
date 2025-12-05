@@ -55,6 +55,7 @@ class UpdateClientBalance extends StatelessWidget {
                   int amount =
                       (int.tryParse(balance.text) ?? 0) * (add ? 1 : -1);
                   int newBalance = client.balance + amount;
+
                   Get.back();
                   await ClientCloudDb.instance.updateClient(
                     client.copyWith(balance: newBalance),
@@ -65,7 +66,7 @@ class UpdateClientBalance extends StatelessWidget {
                       type: amount >= 0 ? "added" : "removed",
                       amount: amount.abs(),
                       curBal: newBalance,
-                      client: client,
+                      client: client.copyWith(balance: newBalance),
                       date: DateTime.now(),
                       updatedAt: 0,
                       deleted: false,
