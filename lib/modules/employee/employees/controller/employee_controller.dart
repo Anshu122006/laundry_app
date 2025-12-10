@@ -120,4 +120,13 @@ class EmployeeScreenController extends GetxController {
       //
     }
   }
+
+  Future<void> openWhattsapp(String phoneNumber) async {
+    final Uri whatsappUri = Uri(
+      scheme: 'https',
+      host: 'wa.me',
+      path: "+91$phoneNumber",
+    );
+    await launchUrl(whatsappUri, mode: LaunchMode.platformDefault);
+  }
 }

@@ -22,7 +22,7 @@ class NoInternetScreen extends StatelessWidget {
             ),
             const SizedBox(height: 3),
             Text(
-              "Seems like you are offline!",
+              "Something went wrong please try again later!",
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),

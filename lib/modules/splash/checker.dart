@@ -1,9 +1,10 @@
+import 'dart:io'; // For SocketException
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // REQUIRED for FirebaseAuthException
+import 'package:google_sign_in/google_sign_in.dart'; // REQUIRED for Google Logout
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/app/routes.dart';
-import 'package:laundary_app/core/constants/icons.dart';
-import 'package:laundary_app/core/utils/device/device_utility.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
 import 'package:laundary_app/data/db_cloud/employee_cloud_db.dart';
@@ -21,76 +22,158 @@ class Checker {
       final savedEmail = box.read(kSavedEmail);
       final savedUserType = box.read(kSavedUserType);
 
-      // If we have a saved session locally, try restoring it first
-      if (savedEmail != null && savedUserType != null) {
-        await AuthController.instance.onLogin(
-          savedUserType == "client" ? UserType.client : UserType.employee,
-          savedEmail,
-        );
+      // We removed the initial "noInternet" return.
+      // We want to try to let the user in even if offline.
 
-        if (savedUserType == "client") {
-          await Get.offAllNamed(AppRoutes.clientNav);
+      // 1. Check if we have saved local data
+      if (savedEmail != null && savedUserType != null) {
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        // 2. Get the current Firebase User (Cached in memory)
+        final user = AuthServices.instance.getCurrentUser();
+
+        // If Firebase SDK says "No user", we must sign in.
+        if (user == null) {
+          await _forceLogout();
           return;
-        } else {
-          await Get.offAllNamed(AppRoutes.employeeNav);
+        }
+
+        // 3. THE SMART RELOAD (The Core Fix)
+        // We attempt to verify the session with the server.
+        try {
+          await user.reload();
+        } on FirebaseAuthException catch (e) {
+          // Check for Network Errors specifically
+          if (e.code == 'network-request-failed' || e.code == 'unavailable') {
+            // SCENARIO: User is offline.
+            // ACTION: Allow them to proceed with cached credentials.
+            print("Offline mode: Skipping token refresh.");
+          } else {
+            // SCENARIO: Auth Error (SHA-1 mismatch, Password changed, User banned).
+            // ACTION: Force logout to fix the corrupted state.
+            print("Session Invalid (Auth Error: ${e.code}). Logging out.");
+            await _forceLogout();
+            return;
+          }
+        } on SocketException catch (_) {
+          // Handle low-level network errors (offline)
+          print("Offline mode (SocketException): Skipping token refresh.");
+        } catch (e) {
+          // Any other unknown error -> Safety Logout
+          print("Unknown reload error: $e");
+          await _forceLogout();
+          return;
+        }
+
+        // ---------------------------------------------------------
+        // ROUTING LOGIC
+        // ---------------------------------------------------------
+
+        // We use a try-catch block here.
+        // If we are online, we try to fetch fresh DB data.
+        // If we are offline (or DB fails), we fall back to savedUserType.
+
+        try {
+          if (savedUserType == "client") {
+            // Attempt to fetch fresh data (will fail if offline)
+            // We use 'await' here, but you could wrap it to not block UI if preferred
+            if (await hasInternetConncted()) {
+              Client? client = await ClientCloudDb.instance.getClient(
+                user.email,
+              );
+              if (client == null) {
+                // User exists in Auth but deleted from DB? Edge case.
+                // For now, we assume they are valid or handle inside the app.
+              }
+            }
+
+            // Route to Client
+            await AuthController.instance.onLogin(UserType.client, user.email);
+            // Refresh storage to keep it current
+            box.write(kSavedEmail, user.email);
+            await Get.offAllNamed(AppRoutes.clientNav);
+            return;
+          } else {
+            // Employee Logic
+            if (await hasInternetConncted()) {
+              Employee? employee = await EmployeeCloudDb.instance.getEmployee(
+                user.email,
+              );
+              if (employee == null) {
+                // User exists in Auth but deleted from DB? Edge case.
+                // For now, we assume they are valid or handle inside the app.
+              }
+            }
+
+            // Route to Employee
+            await AuthController.instance.onLogin(
+              UserType.employee,
+              user.email,
+            );
+            box.write(kSavedEmail, user.email);
+            await Get.offAllNamed(AppRoutes.employeeNav);
+            return;
+          }
+        } catch (e) {
+          // CRITICAL: If the error is SPECIFICALLY permission-denied,
+          // it means the reload() failed to catch the issue, or rules changed.
+          if (e.toString().contains("permission-denied")) {
+            print("Permission denied during DB access. Logging out.");
+            await _forceLogout();
+            return;
+          }
+
+          // If it's just a network error during DB fetch, we still let them in
+          // because we have the 'savedUserType'.
+          print("DB Fetch failed ($e), entering offline mode.");
+
+          if (savedUserType == "client") {
+            await AuthController.instance.onLogin(UserType.client, user.email);
+            await Get.offAllNamed(AppRoutes.clientNav);
+          } else {
+            await AuthController.instance.onLogin(
+              UserType.employee,
+              user.email,
+            );
+            await Get.offAllNamed(AppRoutes.employeeNav);
+          }
           return;
         }
       }
 
-      // If nothing is saved locally, fall back to Firebase current user
-      await Future.delayed(Duration(milliseconds: 300));
-      final user = AuthServices.instance.getCurrentUser();
-
-      if (user == null) {
-        await Get.offAllNamed(AppRoutes.signin);
-        return;
-      }
-
-      // CLIENT CHECK
-      Client? client = await ClientCloudDb.instance.getClient(user.email);
-      if (client != null) {
-        await AuthController.instance.onLogin(UserType.client, user.email);
-        box.write(kSavedEmail, user.email);
-        box.write(kSavedUserType, "client");
-        await Get.offAllNamed(AppRoutes.clientNav);
-        return;
-      }
-
-      // For employees, verify email unless it's your override
-      if (user.email != "anshu2006dev@gmail.com" && !user.emailVerified) {
-        await Get.offAllNamed(AppRoutes.signin);
-        return;
-      }
-
-      // EMPLOYEE CHECK
-      Employee? employee = await EmployeeCloudDb.instance.getEmployee(
-        user.email,
-      );
-      if (employee != null) {
-        await AuthController.instance.onLogin(UserType.employee, user.email);
-        box.write(kSavedEmail, user.email);
-        box.write(kSavedUserType, "employee");
-        await Get.offAllNamed(AppRoutes.employeeNav);
-        return;
-      }
-
-      // If nothing matches, sign out
-      await AuthServices.instance.signoutFromGoogle();
-      await AuthServices.instance.signoutFromFirebase();
+      // If no saved data, go to signin
       await Get.offAllNamed(AppRoutes.signin);
     } catch (e) {
+      print("Global Error in Checker: $e");
+      // Safety net
+      await Get.offAllNamed(AppRoutes.signin);
+    }
+  }
+
+  // ---------------------------------------------------------
+  // FORCE LOGOUT HELPER
+  // ---------------------------------------------------------
+  static Future<void> _forceLogout() async {
+    try {
+      // 1. Sign out from Google (Clears on-device account choice)
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+      }
+
+      // 2. Sign out from Firebase (Clears backend session)
       await AuthServices.instance.signoutFromGoogle();
       await AuthServices.instance.signoutFromFirebase();
-      Get.offAllNamed(AppRoutes.signin);
+      // Note: Make sure your AuthServices calls FirebaseAuth.instance.signOut()
 
-      Future.delayed(
-        const Duration(milliseconds: 300),
-        () => CDeviceHelper.showSnackbar(
-          "Error",
-          e.toString(),
-          CIcons.errorCross,
-        ),
-      );
+      // 3. Clear Storage (Optional, prevents loops)
+      final box = GetStorage();
+      await box.erase();
+
+      await Get.offAllNamed(AppRoutes.signin);
+    } catch (e) {
+      print("Error during logout: $e");
+      await Get.offAllNamed(AppRoutes.signin);
     }
   }
 
