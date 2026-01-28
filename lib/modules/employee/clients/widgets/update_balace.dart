@@ -58,7 +58,8 @@ class UpdateClientBalance extends StatelessWidget {
 
                   Get.back();
                   await ClientCloudDb.instance.updateClient(
-                    client.copyWith(balance: newBalance),
+                    clientId: client.id,
+                    balance: newBalance,
                   );
                   await TransactionCloudDb.instance.addTransaction(
                     LaundryTransaction(

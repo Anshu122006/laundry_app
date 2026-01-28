@@ -78,20 +78,24 @@ class OrderDetailsController extends GetxController {
     int bal = (client?.balance ?? 0) - amount;
 
     if (client != null) {
-      await ClientCloudDb.instance.updateClient(client.copyWith(balance: bal));
+      await ClientCloudDb.instance.updateClient(
+        clientId: client.id,
+        balance: bal,
+      );
     }
-    LaundryTransaction transaction = LaundryTransaction(
-      id: "",
-      type: "removed",
-      amount: amount,
-      curBal: bal,
-      date: DateTime.now(),
-      client: client?.copyWith(balance: bal),
-      orderType: order.value.type,
-      updatedAt: 0,
-      deleted: false,
+
+    await TransactionCloudDb.instance.addTransaction(
+      LaundryTransaction(
+        id: "",
+        type: "removed",
+        amount: amount.abs(),
+        curBal: bal,
+        client: client?.copyWith(balance: bal),
+        date: DateTime.now(),
+        updatedAt: 0,
+        deleted: false,
+      ),
     );
-    await TransactionCloudDb.instance.addTransaction(transaction);
   }
 
   Future<void> cancelOrder() async {
@@ -107,21 +111,27 @@ class OrderDetailsController extends GetxController {
       client = ClientController.instance.getClient(order.value.clientId);
     }
     int bal = client?.balance ?? 0;
-
     int amount = order.value.cost - order.value.discount;
-    LaundryTransaction transaction = LaundryTransaction(
-      id: "",
-      type: "cancelled",
-      amount: amount,
-      curBal: bal,
-      date: DateTime.now(),
-      client: client?.copyWith(balance: bal),
-      orderType: order.value.type,
-      updatedAt: 0,
-      deleted: false,
-    );
-    await TransactionCloudDb.instance.addTransaction(transaction);
 
+    if (client != null) {
+      await ClientCloudDb.instance.updateClient(
+        clientId: client.id,
+        balance: bal,
+      );
+    }
+
+    await TransactionCloudDb.instance.addTransaction(
+      LaundryTransaction(
+        id: "",
+        type: "cancelled",
+        amount: amount.abs(),
+        curBal: bal,
+        client: client?.copyWith(balance: bal),
+        date: DateTime.now(),
+        updatedAt: 0,
+        deleted: false,
+      ),
+    );
     await updateOrder(true);
   }
 

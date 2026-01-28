@@ -32,7 +32,7 @@ class OrdersScreen extends StatelessWidget {
                         .toList();
                 final orders =
                     controller
-                        .getFilteredPricings(allOrders)
+                        .getFilteredOrders(allOrders)
                         .where((order) => order.status == OrderStatus.pending)
                         .map((order) => order)
                         .toList();
@@ -46,7 +46,7 @@ class OrdersScreen extends StatelessWidget {
                         .toList();
                 final orders =
                     controller
-                        .getFilteredPricings(allOrders)
+                        .getFilteredOrders(allOrders)
                         .where(
                           (order) =>
                               order.status.value > 1 && order.status.value < 5,
@@ -63,7 +63,7 @@ class OrdersScreen extends StatelessWidget {
                         .toList();
                 final orders =
                     controller
-                        .getFilteredPricings(allOrders)
+                        .getFilteredOrders(allOrders)
                         .where((order) => order.status == OrderStatus.delivered)
                         .map((order) => order)
                         .toList();
@@ -77,7 +77,7 @@ class OrdersScreen extends StatelessWidget {
                         .toList();
                 final orders =
                     controller
-                        .getFilteredPricings(allOrders)
+                        .getFilteredOrders(allOrders)
                         .where((order) => order.status == OrderStatus.cancelled)
                         .map((order) => order)
                         .toList();

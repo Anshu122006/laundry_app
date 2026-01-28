@@ -59,10 +59,30 @@ class ClientController extends GetxController {
     clients.add(client.obs);
   }
 
-  void updateClient(Client client) {
+  void updateClient({
+    required String clientId,
+    String? name,
+    String? email,
+    String? phone,
+    String? hostel,
+    String? room,
+    int? balance,
+    int? updatedAt,
+    bool? deleted,
+  }) {
     for (int i = 0; i < clients.length; i++) {
-      if (clients[i].value.id == client.id) {
-        clients[i] = client.obs;
+      if (clients[i].value.id == clientId) {
+        clients[i].value = clients[i].value.copyWith(
+          name: name,
+          email: email,
+          phone: phone,
+          hostel: hostel,
+          room: room,
+          balance: balance,
+          updatedAt: updatedAt,
+          deleted: deleted,
+        );
+
         clients.refresh();
         break;
       }

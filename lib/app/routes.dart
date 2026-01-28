@@ -29,5 +29,5 @@ class AppRoutes {
   static const orderDetails = '/order_details';
   static const orderStatus = '/order_status';
   static const splash = "/splash";
-  static const noInternet = "/no_internet";
+  static const reloadScreen = "/reload_screen";
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:laundary_app/core/utils/logging/logger.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/controllers/client_controller.dart';
 import 'package:laundary_app/data/models/client.dart';
@@ -81,15 +82,62 @@ class ClientCloudDb {
     return docRef.id;
   }
 
-  Future<void> updateClient(Client client) async {
-    client = client.copyWith(
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
-      deleted: false,
-    );
-    await clients.doc(client.id).update(client.toMap());
+  Future<void> updateClient({
+    required String clientId,
+    String? name,
+    String? email,
+    String? phone,
+    String? hostel,
+    String? room,
+    int? balance,
+    bool? deleted,
+    List<String>? fcmTokens,
+  }) async {
+    final Map<String, dynamic> updateData = {};
 
-    if (AuthController.instance.userType.value != UserType.client) {
-      ClientController.instance.updateClient(client);
+    if (name != null) updateData['name'] = name;
+    if (email != null) updateData['email'] = email;
+    if (phone != null) updateData['phone'] = phone;
+    if (hostel != null) updateData['hostel'] = hostel;
+    if (room != null) updateData['room'] = room;
+    if (balance != null) updateData['balance'] = balance;
+    if (deleted != null) updateData['deleted'] = deleted;
+
+    // if (fcmTokens != null) {
+    //   updateData['fcmTokens'] = fcmTokens;
+    // }
+
+    // if (updateData.isEmpty) return;
+
+    updateData['updatedAt'] = DateTime.now().millisecondsSinceEpoch;
+
+    await clients.doc(clientId).update(updateData);
+
+    final current = AuthController.instance.currentClient.value;
+    if (current != null && current.id == clientId) {
+      AuthController.instance.currentClient.value = current.copyWith(
+        name: name ?? current.name,
+        email: email ?? current.email,
+        phone: phone ?? current.phone,
+        hostel: hostel ?? current.hostel,
+        room: room ?? current.room,
+        balance: balance ?? current.balance,
+        deleted: deleted ?? current.deleted,
+        // fcmTokens: fcmTokens ?? current.fcmTokens,
+        updatedAt: updateData['updatedAt'],
+      );
+    } else {
+      AppLogger.logInfo("");
+      ClientController.instance.updateClient(
+        clientId: clientId,
+        name: name,
+        email: email,
+        phone: phone,
+        hostel: hostel,
+        room: room,
+        balance: balance,
+        deleted: deleted,
+      );
     }
   }
 
@@ -131,4 +179,8 @@ class ClientCloudDb {
     clients.doc(client.id).delete();
     ClientController.instance.deleteClient(client);
   }
+
+  // Future<void> updateUserFCM(String userId, String fcmToken) {
+
+  // }
 }

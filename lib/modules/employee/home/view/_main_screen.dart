@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// import 'package:laundary_app/modules/employee/home/controller/home_controller.dart';
 import 'package:laundary_app/modules/employee/home/widgets/home_current_orders.dart';
 import 'package:laundary_app/modules/employee/home/widgets/home_header.dart';
 
@@ -33,6 +34,14 @@ class EmployeeHomeScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 15.0),
                       child: EmployeeCurrentOrders(),
                     ),
+                    // ElevatedButton(
+                    //   onPressed: () {
+                    //     EmployeeHomeController controller =
+                    //         EmployeeHomeController();
+                    //     controller.placeOrder();
+                    //   },
+                    //   child: Text("Test"),
+                    // ),
                     SizedBox(height: 40),
                   ],
                 ),

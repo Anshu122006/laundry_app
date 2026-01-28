@@ -46,10 +46,21 @@ class ClientAccountController extends GetxController {
           balance: userdata.currentClient.value?.balance ?? 0,
           updatedAt: 0,
           deleted: false,
+          // fcmTokens: userdata.currentClient.value?.fcmTokens ?? [],
         );
 
         userdata.currentClient.value = client;
-        await ClientCloudDb.instance.updateClient(client);
+        await ClientCloudDb.instance.updateClient(
+          clientId: userdata.currentClient.value?.id ?? "",
+          name: name.value,
+          email: email.value,
+          phone: phone.value,
+          hostel: hostel.value,
+          room: room.value,
+          balance: userdata.currentClient.value?.balance ?? 0,
+          deleted: false,
+          // fcmTokens: userdata.currentClient.value?.fcmTokens ?? [],
+        );
       } else {
         CDeviceHelper.showSnackbar("Error", data["error"], CIcons.errorCross);
       }
@@ -85,13 +96,13 @@ class ClientAccountController extends GetxController {
   Future<void> signOut() async {
     isLoading.value = true;
     try {
+      await AuthController.instance.onLogout();
+
       await AuthServices.instance.signoutFromGoogle();
       await AuthServices.instance.signoutFromFirebase();
 
-      await AuthController.instance.onLogout();
-
-      Get.offAllNamed(AppRoutes.signin);
-      Future.delayed(
+      await Get.offAllNamed(AppRoutes.signin);
+      await Future.delayed(
         Duration(milliseconds: 0),
         () => CDeviceHelper.showSnackbar(
           "Success",

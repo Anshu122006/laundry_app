@@ -9,7 +9,6 @@ import 'package:laundary_app/data/db_cloud/employee_cloud_db.dart';
 import 'package:laundary_app/data/services/auth_services.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
-import 'package:laundary_app/modules/splash/no_internet.dart';
 
 const String kSavedEmail = "savedEmail";
 const String kSavedUserType = "savedUserType";
@@ -156,9 +155,15 @@ class EmployeeAuthController extends GetxController {
         isLoading.value = false;
         await Get.toNamed(AppRoutes.emailVerification);
       } on FirebaseAuthException catch (e) {
-        String message =
-            'Can\'t sign you in, make sure the email and password you entered are correct';
-
+        String message = 'Some error occured trying to sign you in';
+        if (e.code == 'network-request-failed' || e.code == 'unavailable') {
+          message =
+              'Can\'t sign you in, please make sure you are connected to the internet';
+        } else {
+          message =
+              'Can\'t sign you in, make sure the email and password you entered are correct';
+          return;
+        }
         if (e.code == 'weak-password') {
           message = 'The entered password isn\'t strong enough';
         }
@@ -207,7 +212,7 @@ class EmployeeAuthController extends GetxController {
           "Waiting for connection...",
           CIcons.errorCross,
         );
-        Get.to(() => NoInternetScreen());
+        await Get.toNamed(AppRoutes.reloadScreen);
         return;
       }
 

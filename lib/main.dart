@@ -25,13 +25,14 @@ import 'package:laundary_app/modules/employee/home/view/_main_screen.dart';
 import 'package:laundary_app/modules/employee/navigation_menu/view/_main_screen.dart';
 import 'package:laundary_app/modules/common/orders/view/_main_screen.dart';
 import 'package:laundary_app/modules/employee/passbook/view/_main_screen.dart';
-import 'package:laundary_app/modules/splash/no_internet.dart';
+import 'package:laundary_app/modules/splash/reload_screen.dart';
 import 'package:laundary_app/modules/splash/splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await GetStorage.init();
+
   Get.put(AuthController(), permanent: true);
 
   runApp(MyApp());
@@ -46,7 +47,7 @@ class MyApp extends StatelessWidget {
       initialRoute: AppRoutes.splash,
       getPages: [
         GetPage(name: AppRoutes.splash, page: () => SplashScreen()),
-        GetPage(name: AppRoutes.noInternet, page: () => NoInternetScreen()),
+        GetPage(name: AppRoutes.reloadScreen, page: () => ReloadScreen()),
         GetPage(
           name: AppRoutes.signin,
           page: () => SigninScreen(),

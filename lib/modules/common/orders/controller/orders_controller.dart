@@ -8,7 +8,7 @@ class OrderListController extends GetxController {
   final RxString searchQuery = "".obs;
   final RxString sortBy = "type".obs;
 
-  List<LaundryOrder> getFilteredPricings(List<LaundryOrder> orders) {
+  List<LaundryOrder> getFilteredOrders(List<LaundryOrder> orders) {
     final query = searchQuery.value.toLowerCase().replaceAll(
       RegExp(r'\s+'),
       '',
@@ -55,21 +55,27 @@ class OrderListController extends GetxController {
 
     final sortedList =
         result.toList()..sort((a, b) {
-          final aValue =
-              sortKey == "name"
-                  ? clients[a.clientId]?.name.toLowerCase() ?? ""
-                  : sortKey == "phone"
-                  ? clients[a.clientId]?.phone.toLowerCase() ?? ""
-                  : "${clients[a.clientId]?.hostel ?? ""}${clients[a.clientId]?.room ?? ""}"
-                      .toLowerCase();
-          final bValue =
-              sortKey == "name"
-                  ? clients[b.clientId]?.name.toLowerCase() ?? ""
-                  : sortKey == "phone"
-                  ? clients[b.clientId]?.phone.toLowerCase() ?? ""
-                  : "${clients[b.clientId]?.hostel ?? ""}${clients[b.clientId]?.room ?? ""}"
-                      .toLowerCase();
-          return aValue.compareTo(bValue);
+          // if (sortKey == "date") {
+          final aDate = (a.deliveryDate ?? a.pickupDate) ?? a.placedDate;
+          final bDate = (b.deliveryDate ?? b.pickupDate) ?? b.placedDate;
+
+          return (bDate).compareTo(aDate);
+          // }
+          // final aValue =
+          //     sortKey == "name"
+          //         ? clients[a.clientId]?.name.toLowerCase() ?? ""
+          //         : sortKey == "phone"
+          //         ? clients[a.clientId]?.phone.toLowerCase() ?? ""
+          //         : "${clients[a.clientId]?.hostel ?? ""}${clients[a.clientId]?.room ?? ""}"
+          //             .toLowerCase();
+          // final bValue =
+          //     sortKey == "name"
+          //         ? clients[b.clientId]?.name.toLowerCase() ?? ""
+          //         : sortKey == "phone"
+          //         ? clients[b.clientId]?.phone.toLowerCase() ?? ""
+          //         : "${clients[b.clientId]?.hostel ?? ""}${clients[b.clientId]?.room ?? ""}"
+          //             .toLowerCase();
+          // return aValue.compareTo(bValue);
         });
 
     return sortedList;

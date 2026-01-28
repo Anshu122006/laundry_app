@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// import 'package:laundary_app/data/controllers/auth_controller.dart';
+// import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
 import 'package:laundary_app/modules/client/home/widgets/home_current_orders.dart';
 import 'package:laundary_app/modules/client/home/widgets/home_header.dart';
 
@@ -26,6 +28,18 @@ class ClientHomeScreen extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 15),
                       child: CurrentOrders(),
                     ),
+                    // ElevatedButton(
+                    //   onPressed: () async {
+                    //     await ClientCloudDb.instance.updateClient(
+                    //       clientId:
+                    //           AuthController.instance.currentClient.value?.id ??
+                    //           "",
+                    //       room: "210 B2",
+                    //       // fcmTokens: fcmTokens,
+                    //     );
+                    //   },
+                    //   child: Text("Test"),
+                    // ),
                   ],
                 ),
               ),

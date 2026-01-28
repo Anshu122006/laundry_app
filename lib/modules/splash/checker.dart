@@ -47,7 +47,8 @@ class Checker {
           if (e.code == 'network-request-failed' || e.code == 'unavailable') {
             // SCENARIO: User is offline.
             // ACTION: Allow them to proceed with cached credentials.
-            print("Offline mode: Skipping token refresh.");
+            // print("Offline mode: Skipping token refresh.");
+            await Get.toNamed(AppRoutes.reloadScreen);
           } else {
             // SCENARIO: Auth Error (SHA-1 mismatch, Password changed, User banned).
             // ACTION: Force logout to fix the corrupted state.
@@ -57,7 +58,8 @@ class Checker {
           }
         } on SocketException catch (_) {
           // Handle low-level network errors (offline)
-          print("Offline mode (SocketException): Skipping token refresh.");
+          // print("Offline mode (SocketException): Skipping token refresh.");
+          await Get.toNamed(AppRoutes.reloadScreen);
         } catch (e) {
           // Any other unknown error -> Safety Logout
           print("Unknown reload error: $e");
@@ -162,7 +164,6 @@ class Checker {
       }
 
       // 2. Sign out from Firebase (Clears backend session)
-      await AuthServices.instance.signoutFromGoogle();
       await AuthServices.instance.signoutFromFirebase();
       // Note: Make sure your AuthServices calls FirebaseAuth.instance.signOut()
 

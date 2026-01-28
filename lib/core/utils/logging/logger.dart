@@ -1,23 +1,7 @@
-// import 'package:logger/logger.dart';
+import 'package:flutter/material.dart';
 
-// class CLoggerHelper {
-//   CLoggerHelper._();
-
-//   static final Logger _logger = Logger(printer: PrettyPrinter(), level: Level.debug);
-
-//   static void debug(String message) {
-//     _logger.d(message);
-//   }
-
-//   static void info(String message) {
-//     _logger.i(message);
-//   }
-
-//   static void warning(String message) {
-//     _logger.w(message);
-//   }
-
-//   static void error(String message, [dynamic error]) {
-//     _logger.e(message, error: error, stackTrace: StackTrace.current);
-//   }
-// }
+class AppLogger {
+  static void logInfo(String message) {
+    debugPrint('\x1B[38;5;208m[INFO] $message\x1B[0m');
+  }
+}

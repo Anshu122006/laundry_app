@@ -7,7 +7,6 @@ import 'package:laundary_app/data/models/client.dart';
 import 'package:laundary_app/data/services/auth_services.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
-import 'package:laundary_app/modules/splash/no_internet.dart';
 
 const String kSavedEmail = "savedEmail";
 const String kSavedUserType = "savedUserType";
@@ -83,6 +82,7 @@ class ClientAuthController extends GetxController {
           balance: 0,
           updatedAt: 0,
           deleted: false,
+          // fcmTokens: [],
         );
 
         await ClientCloudDb.instance.addClient(client, true);
@@ -162,7 +162,7 @@ class ClientAuthController extends GetxController {
           CIcons.errorCross,
         );
 
-        Get.to(() => NoInternetScreen());
+        await Get.toNamed(AppRoutes.reloadScreen);
         return;
       }
 

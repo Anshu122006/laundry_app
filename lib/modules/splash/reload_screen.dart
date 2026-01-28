@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:laundary_app/modules/splash/checker.dart';
 
-class NoInternetScreen extends StatelessWidget {
-  const NoInternetScreen({super.key});
+class ReloadScreen extends StatelessWidget {
+  const ReloadScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +22,13 @@ class NoInternetScreen extends StatelessWidget {
             ),
             const SizedBox(height: 3),
             Text(
-              "Something went wrong please try again later!",
+              "Something went wrong please try again!",
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
             const Image(
-              image: AssetImage("assets/illustrations/no_internet.png"),
+              image: AssetImage("assets/illustrations/error.png"),
               height: 330,
             ),
             const SizedBox(height: 60),
