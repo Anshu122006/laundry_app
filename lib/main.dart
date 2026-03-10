@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -31,11 +32,18 @@ import 'package:laundary_app/modules/splash/splash.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await GetStorage.init();
-
-  Get.put(AuthController(), permanent: true);
-
+  _initServices();
   runApp(MyApp());
+}
+
+Future<void> _initServices() async {
+  await GetStorage.init();
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+  Get.put(AuthController(), permanent: true);
 }
 
 class MyApp extends StatelessWidget {

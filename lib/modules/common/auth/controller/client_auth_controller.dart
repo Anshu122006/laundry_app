@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/app/routes.dart';
+import 'package:laundary_app/core/utils/logging/logger.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
 import 'package:laundary_app/data/models/client.dart';
@@ -22,6 +23,7 @@ class ClientAuthController extends GetxController {
 
   Future<void> signin() async {
     isLoading.value = true;
+    AppLogger.logInfo("Login started");
     try {
       await AuthServices.instance.signInWithGoogle();
       final user = AuthServices.instance.getCurrentUser();
@@ -32,8 +34,9 @@ class ClientAuthController extends GetxController {
         name.value = user.displayName;
         isLoading.value = false;
 
-        Get.toNamed(AppRoutes.signup);
-        Future.delayed(Duration(milliseconds: 300), () {
+        AppLogger.logInfo("Signup needed");
+        await Get.toNamed(AppRoutes.signup);
+        await Future.delayed(Duration(milliseconds: 300), () {
           CDeviceHelper.showSnackbar(
             "Welcome",
             "Welcome to Maa Laundry",
@@ -44,11 +47,13 @@ class ClientAuthController extends GetxController {
         final box = GetStorage();
         box.write(kSavedEmail, user.email);
         box.write(kSavedUserType, "client");
+        AppLogger.logInfo("Stored credentials locally");
 
         await AuthController.instance.onLogin(UserType.client, user.email);
+        AppLogger.logInfo("Auth controller initialized");
 
-        Get.offAllNamed(AppRoutes.clientNav);
-        Future.delayed(Duration(milliseconds: 300), () {
+        await navigateToHomeScreen();
+        await Future.delayed(Duration(milliseconds: 300), () {
           CDeviceHelper.showSnackbar(
             "Success",
             "Signed in successfully",
@@ -93,7 +98,7 @@ class ClientAuthController extends GetxController {
 
         await AuthController.instance.onLogin(UserType.client, email.value);
 
-        Get.offAllNamed(AppRoutes.clientNav);
+        await navigateToHomeScreen();
       } else {
         CDeviceHelper.showSnackbar("Error", data["error"], CIcons.errorCross);
       }
@@ -202,7 +207,7 @@ class ClientAuthController extends GetxController {
       await AuthController.instance.onLogin(UserType.client, savedEmail);
 
       isLoading.value = false;
-      await Get.offAllNamed(AppRoutes.clientNav);
+      await navigateToHomeScreen();
     } catch (e) {
       isLoading.value = false;
 
@@ -221,6 +226,15 @@ class ClientAuthController extends GetxController {
           CIcons.errorCross,
         );
       });
+    }
+  }
+
+  Future<void> navigateToHomeScreen() async {
+    try {
+      await ClientCloudDb.instance.addFcmToken();
+      await Get.offAllNamed(AppRoutes.clientNav);
+    } catch (e) {
+      await Get.offAllNamed(AppRoutes.clientNav);
     }
   }
 }

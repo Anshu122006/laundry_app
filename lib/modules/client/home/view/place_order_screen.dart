@@ -46,7 +46,9 @@ class PlaceOrderScreen extends StatelessWidget {
                     right: 30,
                     child: ElevatedButton(
                       onPressed: () async {
-                        await controller.placeOrder(type);
+                        if (!controller.isLoading.value) {
+                          await controller.placeOrder(type);
+                        }
                       },
                       child: Text("Place Order"),
                     ),

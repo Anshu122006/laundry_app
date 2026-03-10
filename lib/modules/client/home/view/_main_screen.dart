@@ -30,12 +30,11 @@ class ClientHomeScreen extends StatelessWidget {
                     ),
                     // ElevatedButton(
                     //   onPressed: () async {
-                    //     await ClientCloudDb.instance.updateClient(
-                    //       clientId:
-                    //           AuthController.instance.currentClient.value?.id ??
-                    //           "",
-                    //       room: "210 B2",
-                    //       // fcmTokens: fcmTokens,
+                    //     final clientId =
+                    //         AuthController.instance.currentClient.value?.id;
+                    //     await NotificationService.instance.sendNotification(
+                    //       clientId,
+                    //       "picked",
                     //     );
                     //   },
                     //   child: Text("Test"),

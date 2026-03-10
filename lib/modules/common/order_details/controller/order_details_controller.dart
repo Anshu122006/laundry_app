@@ -9,6 +9,7 @@ import 'package:laundary_app/data/db_cloud/transaction_cloud_db.dart';
 import 'package:laundary_app/data/models/client.dart';
 import 'package:laundary_app/data/models/order.dart';
 import 'package:laundary_app/data/models/transaction.dart';
+import 'package:laundary_app/data/services/notification_service.dart';
 
 class OrderDetailsController extends GetxController {
   OrderDetailsController(LaundryOrder initialOrder) : order = initialOrder.obs;
@@ -40,6 +41,10 @@ class OrderDetailsController extends GetxController {
           pickupAgentId: agentId,
           pickupDate: DateTime.now(),
         );
+        await NotificationService.instance.sendNotification(
+          order.value.clientId,
+          "picked",
+        );
         break;
       case OrderStatus.picked:
         order.value = order.value.copyWith(
@@ -51,6 +56,10 @@ class OrderDetailsController extends GetxController {
         order.value = order.value.copyWith(
           status: OrderStatus.ready,
           statusBeforeCancelled: OrderStatus.ready,
+        );
+        await NotificationService.instance.sendNotification(
+          order.value.clientId,
+          "ready",
         );
         break;
       case OrderStatus.ready:
@@ -88,6 +97,7 @@ class OrderDetailsController extends GetxController {
       LaundryTransaction(
         id: "",
         type: "removed",
+        orderType: order.value.type,
         amount: amount.abs(),
         curBal: bal,
         client: client?.copyWith(balance: bal),
@@ -124,6 +134,7 @@ class OrderDetailsController extends GetxController {
       LaundryTransaction(
         id: "",
         type: "cancelled",
+        orderType: order.value.type,
         amount: amount.abs(),
         curBal: bal,
         client: client?.copyWith(balance: bal),

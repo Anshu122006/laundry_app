@@ -96,6 +96,7 @@ class ClientAccountController extends GetxController {
   Future<void> signOut() async {
     isLoading.value = true;
     try {
+      // await ClientCloudDb.instance.removeFcmToken();
       await AuthController.instance.onLogout();
 
       await AuthServices.instance.signoutFromGoogle();

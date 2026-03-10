@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:laundary_app/core/utils/logging/logger.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/controllers/client_controller.dart';
@@ -103,12 +104,6 @@ class ClientCloudDb {
     if (balance != null) updateData['balance'] = balance;
     if (deleted != null) updateData['deleted'] = deleted;
 
-    // if (fcmTokens != null) {
-    //   updateData['fcmTokens'] = fcmTokens;
-    // }
-
-    // if (updateData.isEmpty) return;
-
     updateData['updatedAt'] = DateTime.now().millisecondsSinceEpoch;
 
     await clients.doc(clientId).update(updateData);
@@ -127,7 +122,6 @@ class ClientCloudDb {
         updatedAt: updateData['updatedAt'],
       );
     } else {
-      AppLogger.logInfo("");
       ClientController.instance.updateClient(
         clientId: clientId,
         name: name,
@@ -180,7 +174,33 @@ class ClientCloudDb {
     ClientController.instance.deleteClient(client);
   }
 
-  // Future<void> updateUserFCM(String userId, String fcmToken) {
+  Future<void> addFcmToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    final clientId = AuthController.instance.currentClient.value?.id;
+    final token = await messaging.getToken();
+    if (clientId == null || token == null) return;
 
-  // }
+    try {
+      await clients.doc(clientId).update({
+        'fcmTokens': FieldValue.arrayUnion([token]),
+      });
+    } catch (e) {
+      AppLogger.logInfo("Error adding FCM token: $e");
+    }
+  }
+
+  Future<void> removeFcmToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    final clientId = AuthController.instance.currentClient.value?.id;
+    final token = await messaging.getToken();
+    if (clientId == null || token == null) return;
+
+    try {
+      await clients.doc(clientId).update({
+        'fcmTokens': FieldValue.arrayRemove([token]),
+      });
+    } catch (e) {
+      AppLogger.logInfo("Error removing FCM token: $e");
+    }
+  }
 }

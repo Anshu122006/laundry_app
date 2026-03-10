@@ -1,5 +1,3 @@
-import 'dart:core';
-
 class Client {
   final String id;
   final String name;
@@ -10,7 +8,7 @@ class Client {
   final int balance;
   final int updatedAt;
   final bool deleted;
-  // final List<String> fcmTokens;
+  final List<String>? fcmTokens; // Already nullable
 
   Client({
     required this.id,
@@ -22,7 +20,7 @@ class Client {
     required this.balance,
     required this.updatedAt,
     required this.deleted,
-    // required this.fcmTokens,
+    this.fcmTokens,
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
@@ -36,7 +34,10 @@ class Client {
       balance: json["balance"]?.toInt() ?? 0,
       updatedAt: json["updatedAt"]?.toInt() ?? 0,
       deleted: json["deleted"] == 1 || json["deleted"] == true,
-      // fcmTokens: List<String>.from(json["fcmTokens"] ?? []),
+      fcmTokens:
+          json["fcmTokens"] != null
+              ? List<String>.from(json["fcmTokens"])
+              : null,
     );
   }
 
@@ -51,7 +52,7 @@ class Client {
       "balance": balance,
       "updatedAt": updatedAt,
       "deleted": deleted ? 1 : 0,
-      // "fcmTokens": fcmTokens,
+      "fcmTokens": fcmTokens,
     };
   }
 
@@ -65,7 +66,7 @@ class Client {
     int? balance,
     int? updatedAt,
     bool? deleted,
-    // List<String>? fcmTokens,
+    List<String>? fcmTokens,
   }) {
     return Client(
       id: id ?? this.id,
@@ -77,7 +78,7 @@ class Client {
       balance: balance ?? this.balance,
       updatedAt: updatedAt ?? this.updatedAt,
       deleted: deleted ?? this.deleted,
-      // fcmTokens: List<String>.from(fcmTokens ?? this.fcmTokens),
+      fcmTokens: fcmTokens ?? this.fcmTokens,
     );
   }
 }
