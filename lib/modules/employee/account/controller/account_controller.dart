@@ -93,13 +93,8 @@ class EmployeeAccountController extends GetxController {
       box.remove(kSavedEmail);
       box.remove(kSavedUserType);
 
-      Get.offAllNamed(AppRoutes.signin);
+      Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
       await Future.delayed(Duration(seconds: 0));
-      CDeviceHelper.showSnackbar(
-        "Success",
-        "Signed out successfully",
-        CIcons.successCheck,
-      );
     } catch (e) {
       // await Get.offAllNamed(AppRoutes.signin);
       await Future.delayed(Duration(seconds: 0));

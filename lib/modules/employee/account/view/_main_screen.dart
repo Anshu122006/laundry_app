@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:laundary_app/app/routes.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
+import 'package:laundary_app/data/services/url_service.dart';
 import 'package:laundary_app/modules/common/attributions/view/_main_screen.dart';
 import 'package:laundary_app/modules/employee/account/controller/account_controller.dart';
 import 'package:laundary_app/modules/employee/account/widgets/account_header.dart';
@@ -69,14 +70,6 @@ class EmployeeAccountScreen extends StatelessWidget {
                               ? "Click to update pricing"
                               : "Click to check pricing",
                     ),
-                    COptionTile(
-                      onPressed: () {
-                        Get.toNamed(AppRoutes.contacts);
-                      },
-                      leadingIcon: CIcons.contactus,
-                      title: "Contact-us",
-                      subtitle: "Update contact details",
-                    ),
                     Obx(
                       () => COptionTile(
                         onPressed: () {},
@@ -94,6 +87,27 @@ class EmployeeAccountScreen extends StatelessWidget {
                         title: "Passbook",
                         subtitle: "Check passbook",
                       ),
+                    COptionTile(
+                      onPressed:
+                          () async => await UrlService.joinWhatsAppGroup(),
+                      leadingIcon: CIcons.whattsapp,
+                      title: "Group",
+                      subtitle: "Join our whattsapp group",
+                    ),
+                    COptionTile(
+                      onPressed: () async => await UrlService.openReviewPage(),
+                      leadingIcon: CIcons.review,
+                      title: "Rate-us",
+                      subtitle: "Review the app on playstore",
+                    ),
+                    COptionTile(
+                      onPressed: () {
+                        Get.toNamed(AppRoutes.contacts);
+                      },
+                      leadingIcon: CIcons.contactus,
+                      title: "Contact-us",
+                      subtitle: "Update contact details",
+                    ),
                     SizedBox(height: 20),
                     Container(
                       width: double.infinity,

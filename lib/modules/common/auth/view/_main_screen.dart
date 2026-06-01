@@ -2,6 +2,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:get/get.dart';
+import 'package:laundary_app/core/constants/icons.dart';
+import 'package:laundary_app/core/utils/device/device_utility.dart';
 import 'package:laundary_app/modules/common/auth/controller/client_auth_controller.dart';
 import 'package:laundary_app/modules/common/auth/controller/employee_auth_controller.dart';
 import 'package:laundary_app/modules/common/auth/widgets/auth_background.dart';
@@ -20,6 +22,16 @@ class SigninScreen extends HookWidget {
 
     useEffect(() {
       FirebaseMessaging.instance.requestPermission();
+
+      if (Get.arguments?["showMessage"] == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          CDeviceHelper.showSnackbar(
+            "Success",
+            "Signed out successfully",
+            CIcons.successCheck,
+          );
+        });
+      }
       return null;
     }, []);
 

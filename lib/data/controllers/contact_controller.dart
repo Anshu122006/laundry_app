@@ -17,6 +17,8 @@ class ContactController extends GetxController {
         map: "",
         paymentLink: "",
         whatsapp: "",
+        groupLink: "",
+        extraLinks: [],
       ).obs;
 
   static Future<void> initController() async {

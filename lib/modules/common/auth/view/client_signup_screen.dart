@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:laundary_app/core/constants/colors.dart';
+import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
 import 'package:laundary_app/data/services/auth_services.dart';
 import 'package:laundary_app/modules/common/auth/controller/client_auth_controller.dart';
@@ -9,12 +11,25 @@ import 'package:laundary_app/modules/common/auth/widgets/client_signup_form.dart
 import 'package:laundary_app/modules/common/auth/widgets/client_signup_header.dart';
 import 'package:laundary_app/shared/widgets/loading_overlay.dart';
 
-class ClientSignupScreen extends StatelessWidget {
+class ClientSignupScreen extends HookWidget {
   const ClientSignupScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ClientAuthController>();
+
+    useEffect(() {
+      if (Get.arguments?["showWelcome"] == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          CDeviceHelper.showSnackbar(
+            "Welcome",
+            "Welcome to Maa Laundry",
+            CIcons.welcome,
+          );
+        });
+      }
+      return null;
+    }, []);
 
     return PopScope(
       canPop: false,
@@ -23,14 +38,18 @@ class ClientSignupScreen extends StatelessWidget {
           return;
         } else {
           try {
-            await AuthServices.instance.signoutFromGoogle();
-            await AuthServices.instance.signoutFromFirebase();
-            Get.back();
+            try {
+              await AuthServices.instance.signoutFromGoogle();
+              await AuthServices.instance.signoutFromFirebase();
+            } finally {
+              Get.back();
+            }
           } catch (e) {
             Get.back();
           }
         }
       },
+
       child: Scaffold(
         body: Stack(
           children: [

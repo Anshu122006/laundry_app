@@ -18,12 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _onSplash() async {
-    // bool connected = await Checker.hasInternetConncted();
-    // if (connected) {
     await Checker.handleUser();
-    // } else {
-    //   Get.to(() => NoInternetScreen());
-    // }
   }
 
   @override

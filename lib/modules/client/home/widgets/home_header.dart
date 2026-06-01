@@ -24,15 +24,24 @@ class ClientHomeHeader extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              right: 10,
+              right: 5,
               top: 25,
+              child: Image.asset(
+                "assets/icons/offer_icon.png",
+                width: 70,
+                height: 70,
+              ),
+            ),
+            Positioned(
+              right: 15,
+              top: 34,
               child: IconButton(
                 onPressed: () {
                   Get.toNamed(AppRoutes.offers);
                 },
                 icon: Icon(
                   FontAwesomeIcons.info,
-                  color: CColors.secondaryColor,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                 ),
               ),
             ),

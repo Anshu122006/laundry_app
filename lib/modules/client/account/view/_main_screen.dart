@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:laundary_app/app/routes.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
+import 'package:laundary_app/data/services/url_service.dart';
 import 'package:laundary_app/modules/client/account/controller/account_controller.dart';
 import 'package:laundary_app/modules/client/account/widgets/account_header.dart';
 import 'package:laundary_app/modules/client/account/widgets/account_option_tile.dart';
@@ -64,18 +65,31 @@ class ClientAccountScreen extends StatelessWidget {
                       subtitle: "Check item prices",
                     ),
                     COptionTile(
+                      onPressed: () => Get.toNamed(AppRoutes.clientWallet),
+                      leadingIcon: CIcons.wallet,
+                      title: "Wallet",
+                      subtitle: "Check your wallet balance",
+                    ),
+                    COptionTile(
+                      onPressed:
+                          () async => await UrlService.joinWhatsAppGroup(),
+                      leadingIcon: CIcons.whattsapp,
+                      title: "Group",
+                      subtitle: "Join our whattsapp group",
+                    ),
+                    COptionTile(
+                      onPressed: () async => await UrlService.openReviewPage(),
+                      leadingIcon: CIcons.review,
+                      title: "Rate-us",
+                      subtitle: "Review the app on playstore",
+                    ),
+                    COptionTile(
                       onPressed: () {
                         Get.toNamed(AppRoutes.contacts);
                       },
                       leadingIcon: CIcons.contactus,
                       title: "Contact-us",
                       subtitle: "Need help? contact us",
-                    ),
-                    COptionTile(
-                      onPressed: () => Get.toNamed(AppRoutes.clientWallet),
-                      leadingIcon: CIcons.wallet,
-                      title: "Wallet",
-                      subtitle: "Check your wallet balance",
                     ),
                     SizedBox(height: 30),
                     Container(

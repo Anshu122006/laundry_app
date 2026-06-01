@@ -11,6 +11,7 @@ class AuthServices {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final String bypassEmail = "anshu2006dev@gmail.com";
 
   Future<UserCredential?> signInWithGoogle() async {
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -41,6 +42,7 @@ class AuthServices {
   }
 
   Future signupEmployee(String email, String password) async {
+    if (email == bypassEmail) return;
     return await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
       password: password,
@@ -60,16 +62,19 @@ class AuthServices {
 
   Future deleteCurrentUser() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    if (user != null && user.email != bypassEmail) {
       await user.delete();
     }
   }
 
   Future deleteUser(user) async {
-    await user!.delete();
+    if (user != null && user.email != bypassEmail) {
+      await user!.delete();
+    }
   }
 
   Future sendResetPasswordEmail(String email) async {
+    if (email == bypassEmail) return;
     await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/app/routes.dart';
@@ -23,56 +24,48 @@ class ClientAuthController extends GetxController {
 
   Future<void> signin() async {
     isLoading.value = true;
-    AppLogger.logInfo("Login started");
     try {
       await AuthServices.instance.signInWithGoogle();
+
       final user = AuthServices.instance.getCurrentUser();
-      Client? client = await ClientCloudDb.instance.getClient(user.email);
+      if (user == null) {
+        throw Exception("User not available after sign-in");
+      }
+
+      final client = await ClientCloudDb.instance.getClient(user.email);
+
+      final box = GetStorage();
+      box.write(kSavedEmail, user.email);
+      box.write(kSavedUserType, "client");
 
       if (client == null) {
         email.value = user.email;
-        name.value = user.displayName;
-        isLoading.value = false;
+        name.value = user.displayName ?? "";
 
-        AppLogger.logInfo("Signup needed");
-        await Get.toNamed(AppRoutes.signup);
-        await Future.delayed(Duration(milliseconds: 300), () {
-          CDeviceHelper.showSnackbar(
-            "Welcome",
-            "Welcome to Maa Laundry",
-            CIcons.welcome,
-          );
-        });
+        Get.toNamed(AppRoutes.signup, arguments: {"showWelcome": true});
       } else {
-        final box = GetStorage();
-        box.write(kSavedEmail, user.email);
-        box.write(kSavedUserType, "client");
-        AppLogger.logInfo("Stored credentials locally");
-
         await AuthController.instance.onLogin(UserType.client, user.email);
-        AppLogger.logInfo("Auth controller initialized");
-
-        await navigateToHomeScreen();
-        await Future.delayed(Duration(milliseconds: 300), () {
-          CDeviceHelper.showSnackbar(
-            "Success",
-            "Signed in successfully",
-            CIcons.successCheck,
-          );
-        });
+        await navigateToHomeScreen(true);
       }
+    } on FirebaseAuthException catch (e) {
+      CDeviceHelper.showSnackbar(
+        "Authentication Error",
+        e.message ?? "Authentication failed",
+        CIcons.errorCross,
+      );
     } catch (e) {
       CDeviceHelper.showSnackbar(
         "Error",
-        "Some error occured while trying to sign-in",
+        "Some error occurred while signing in",
         CIcons.errorCross,
       );
+      AppLogger.logInfo(e.toString());
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future signup() async {
+  Future<void> signup() async {
     isLoading.value = true;
     try {
       final data = validateInputs();
@@ -87,18 +80,14 @@ class ClientAuthController extends GetxController {
           balance: 0,
           updatedAt: 0,
           deleted: false,
-          // fcmTokens: [],
         );
 
         await ClientCloudDb.instance.addClient(client, true);
-
-        final box = GetStorage();
-        box.write(kSavedEmail, email.value);
-        box.write(kSavedUserType, "client");
+        await ClientCloudDb.instance.addFcmToken();
 
         await AuthController.instance.onLogin(UserType.client, email.value);
 
-        await navigateToHomeScreen();
+        await navigateToHomeScreen(true);
       } else {
         CDeviceHelper.showSnackbar("Error", data["error"], CIcons.errorCross);
       }
@@ -207,7 +196,7 @@ class ClientAuthController extends GetxController {
       await AuthController.instance.onLogin(UserType.client, savedEmail);
 
       isLoading.value = false;
-      await navigateToHomeScreen();
+      await navigateToHomeScreen(false);
     } catch (e) {
       isLoading.value = false;
 
@@ -229,12 +218,11 @@ class ClientAuthController extends GetxController {
     }
   }
 
-  Future<void> navigateToHomeScreen() async {
-    try {
-      await ClientCloudDb.instance.addFcmToken();
-      await Get.offAllNamed(AppRoutes.clientNav);
-    } catch (e) {
-      await Get.offAllNamed(AppRoutes.clientNav);
-    }
+  Future<void> navigateToHomeScreen(bool initSignin) async {
+    if (initSignin) await ClientCloudDb.instance.addFcmToken();
+    await Get.offAllNamed(
+      AppRoutes.clientNav,
+      arguments: {"showMessage": initSignin},
+    );
   }
 }

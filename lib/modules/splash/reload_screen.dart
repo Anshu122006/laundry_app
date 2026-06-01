@@ -51,7 +51,7 @@ class ReloadButton extends StatelessWidget {
     turns.value -= 1;
     await Future.delayed(const Duration(milliseconds: 300));
     try {
-      bool connected = await Checker.hasInternetConncted();
+      bool connected = await Checker.hasInternet();
       if (connected) {
         await Checker.handleUser();
       }

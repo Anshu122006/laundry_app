@@ -7,6 +7,8 @@ class Contact {
   final String map;
   final String paymentLink;
   final String email;
+  final String groupLink;
+  final List<String> extraLinks;
 
   Contact({
     required this.id,
@@ -15,6 +17,8 @@ class Contact {
     required this.map,
     required this.paymentLink,
     required this.email,
+    required this.groupLink,
+    required this.extraLinks,
   });
 
   factory Contact.fromJson(Map<String, dynamic> json) {
@@ -25,6 +29,11 @@ class Contact {
       map: json['map'] ?? "",
       paymentLink: json['paymentLink'] ?? "",
       email: json['email'] ?? "",
+      groupLink: json['groupLink'] ?? "",
+      extraLinks:
+          json['extraLinks'] != null
+              ? List<String>.from(json['extraLinks'])
+              : [],
     );
   }
 
@@ -36,6 +45,8 @@ class Contact {
       'map': map,
       'paymentLink': paymentLink,
       'email': email,
+      'groupLink': groupLink,
+      'extraLinks': extraLinks,
     };
   }
 }

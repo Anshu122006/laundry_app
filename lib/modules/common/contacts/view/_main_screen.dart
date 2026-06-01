@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:laundary_app/data/controllers/contact_controller.dart';
 import 'package:laundary_app/data/db_cloud/contact_cloud_db.dart';
+import 'package:laundary_app/data/services/url_service.dart';
 import 'package:laundary_app/modules/common/contacts/widgets/bottomsheets.dart';
-import 'package:laundary_app/modules/common/contacts/widgets/contact_helper.dart';
 import 'package:laundary_app/modules/common/contacts/widgets/qr_code.dart';
 import 'package:laundary_app/shared/widgets/back_button.dart';
 import 'package:laundary_app/modules/common/contacts/widgets/contact_row.dart';
@@ -46,7 +46,7 @@ class ContactScreen extends StatelessWidget {
                             icon: FontAwesomeIcons.envelope,
                             name: "Email",
                             value: contactdata.contact.value.email,
-                            onTap: ContactHelper.openEmail,
+                            onTap: UrlService.openEmail,
                             onEdit: () {
                               final id =
                                   ContactController.instance.contact.value.id;
@@ -69,7 +69,7 @@ class ContactScreen extends StatelessWidget {
                             icon: FontAwesomeIcons.whatsapp,
                             name: "WhatsApp",
                             value: "+91 ${contactdata.contact.value.whatsapp}",
-                            onTap: ContactHelper.openWhattsapp,
+                            onTap: UrlService.openWhattsapp,
                             onEdit: () {
                               final id =
                                   ContactController.instance.contact.value.id;
@@ -93,7 +93,7 @@ class ContactScreen extends StatelessWidget {
                             icon: FontAwesomeIcons.mapLocationDot,
                             name: "Location",
                             value: "reach us",
-                            onTap: ContactHelper.openMap,
+                            onTap: UrlService.openMap,
                             onEdit: () {
                               final id =
                                   ContactController.instance.contact.value.id;
@@ -111,30 +111,6 @@ class ContactScreen extends StatelessWidget {
                               );
                             },
                           ),
-
-                          ContactRow(
-                            icon: FontAwesomeIcons.rankingStar,
-                            name: "Review",
-                            value: "rate us on playstore",
-                            onTap: ContactHelper.openReviewPage,
-                            onEdit: () {
-                              final id =
-                                  ContactController.instance.contact.value.id;
-                              ContactEditBottomSheet.show(
-                                context: context,
-                                fieldName: "Rate Us",
-                                initialValue: contactdata.contact.value.review,
-                                onConfirm: (value) async {
-                                  await ContactCloudDb.instance.updateContacts(
-                                    id: id,
-                                    review: value,
-                                  );
-                                  await ContactController.instance.syncData();
-                                },
-                              );
-                            },
-                          ),
-
                           SizedBox(height: 30),
                           QRCode(),
                         ],

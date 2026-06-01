@@ -21,6 +21,8 @@ class CIcons {
   static Icon roomIcon = Icon(Icons.door_sliding);
   static Icon wallet = Icon(Icons.wallet);
   static Icon passbook = Icon(FontAwesomeIcons.moneyCheck);
+  static Icon whattsapp = Icon(FontAwesomeIcons.whatsapp);
+  static Icon review = Icon(FontAwesomeIcons.rankingStar);
   static Icon prices = Icon(FontAwesomeIcons.coins);
   static Icon offers = Icon(Icons.local_offer);
   static Icon contactus = Icon(Icons.support_agent);

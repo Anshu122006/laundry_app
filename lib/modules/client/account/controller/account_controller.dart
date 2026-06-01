@@ -102,15 +102,7 @@ class ClientAccountController extends GetxController {
       await AuthServices.instance.signoutFromGoogle();
       await AuthServices.instance.signoutFromFirebase();
 
-      await Get.offAllNamed(AppRoutes.signin);
-      await Future.delayed(
-        Duration(milliseconds: 0),
-        () => CDeviceHelper.showSnackbar(
-          "Success",
-          "Signed out sucessfully",
-          CIcons.successCheck,
-        ),
-      );
+      await Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
     } catch (e) {
       await Get.offAllNamed(AppRoutes.signin);
       await Future.delayed(Duration(seconds: 0));

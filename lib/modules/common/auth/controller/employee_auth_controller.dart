@@ -74,10 +74,10 @@ class EmployeeAuthController extends GetxController {
         await AuthServices.instance.deleteCurrentUser();
         CDeviceHelper.showSnackbar(
           "Error",
-          "Unauthorised User",
+          "User does not exist",
           CIcons.errorCross,
         );
-        return;
+        throw "User does not exist";
       }
 
       if (!credential.user!.emailVerified) {
@@ -234,31 +234,33 @@ class EmployeeAuthController extends GetxController {
         return;
       }
 
-      if (!refreshedUser.emailVerified) {
-        int sentAt = box.read("sentAt") ?? 0;
-        int timePassed = DateTime.now().millisecondsSinceEpoch - sentAt;
+      await signin();
 
-        if (timePassed < Duration(seconds: verifyDuration).inMilliseconds) {
-          remainingSeconds.value = verifyDuration - timePassed ~/ 1000;
-          startTimer();
+      // if (!refreshedUser.emailVerified) {
+      //   int sentAt = box.read("sentAt") ?? 0;
+      //   int timePassed = DateTime.now().millisecondsSinceEpoch - sentAt;
 
-          isLoading.value = false;
-          await Get.offAllNamed(AppRoutes.emailVerification);
-          return;
-        } else {
-          await AuthServices.instance.deleteCurrentUser();
-          box.remove(kSavedEmail);
-          box.remove(kSavedUserType);
+      //   if (timePassed < Duration(seconds: verifyDuration).inMilliseconds) {
+      //     remainingSeconds.value = verifyDuration - timePassed ~/ 1000;
+      //     startTimer();
 
-          isLoading.value = false;
-          await Get.offAllNamed(AppRoutes.signin);
-          return;
-        }
-      }
+      //     isLoading.value = false;
+      //     await Get.offAllNamed(AppRoutes.emailVerification);
+      //     return;
+      //   } else {
+      //     await AuthServices.instance.deleteCurrentUser();
+      //     box.remove(kSavedEmail);
+      //     box.remove(kSavedUserType);
 
-      await AuthController.instance.onLogin(UserType.employee, savedEmail);
-      isLoading.value = false;
-      await Get.offAllNamed(AppRoutes.employeeNav);
+      //     isLoading.value = false;
+      //     await Get.offAllNamed(AppRoutes.signin);
+      //     return;
+      //   }
+      // }
+
+      // await AuthController.instance.onLogin(UserType.employee, savedEmail);
+      // isLoading.value = false;
+      // await Get.offAllNamed(AppRoutes.employeeNav);
     } catch (e) {
       isLoading.value = false;
 
