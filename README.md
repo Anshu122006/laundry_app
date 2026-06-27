@@ -1,16 +1,10 @@
-# laundary_app
+# MAA LAUNDRY
+Laundry app made with flutter, using firebase and render for hosting.
 
-A new Flutter project.
+Laundry app for iiti students where they could place order and get notified when their order is piced and ready,
+they could check their current wallet balance, money transactions are managed separately (not part of the app).
+
+link to playstore - https://play.google.com/store/apps/details?id=com.iiti.laundry
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
