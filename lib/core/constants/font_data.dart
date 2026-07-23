@@ -27,6 +27,9 @@ class CFontFamily {
   static String passionsConflict = "PassionsConflict";
   static String robot = "Robot";
   static String robotMono = "RobotMono";
+  static String dynaPuff = "DynaPuff";
+  static String poppins = "Poppins";
+  static String kaushan = "Kaushan";
 }
 
 class CFontWeights {

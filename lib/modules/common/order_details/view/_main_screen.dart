@@ -62,8 +62,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                       await controller.updateStatus();
                                       if (controller.order.value.status ==
                                           OrderStatus.delivered) {
-                                        await controller
-                                            .addDeliveryTransaction();
+                                        await controller.addDeliveryTransaction();
                                         Get.back();
                                       }
                                     },

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
-import 'package:laundary_app/data/db_cloud/transaction_cloud_db.dart';
 import 'package:laundary_app/data/models/client.dart';
-import 'package:laundary_app/data/models/transaction.dart';
+import 'package:laundary_app/modules/common/order_details/controller/balance_controller.dart';
 
 class UpdateClientBalance extends StatelessWidget {
-  const UpdateClientBalance({
+  UpdateClientBalance({
     super.key,
     required this.client,
     required this.add,
@@ -15,16 +13,15 @@ class UpdateClientBalance extends StatelessWidget {
   final Client client;
   final bool add;
 
+  final ClientBalanceController controller = Get.put(ClientBalanceController());
+
   @override
   Widget build(BuildContext context) {
-    TextEditingController balance = TextEditingController();
-    balance.text = "";
-
     return SafeArea(
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(15),
             topRight: Radius.circular(15),
           ),
@@ -39,43 +36,36 @@ class UpdateClientBalance extends StatelessWidget {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: balance,
-              decoration: InputDecoration(
-                hintText: "Enter amount to be ${add ? "added" : "removed"}",
-              ),
-              textInputAction: TextInputAction.done,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-            ),
-            SizedBox(height: 10),
+            // Obx wrapper to disable text field input while loading
+            Obx(() => TextField(
+                  controller: controller.balanceController,
+                  enabled: !controller.isLoading.value,
+                  decoration: InputDecoration(
+                    hintText: "Enter amount to be ${add ? "added" : "removed"}",
+                  ),
+                  textInputAction: TextInputAction.done,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                )),
+            const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () async {
-                  int amount =
-                      (int.tryParse(balance.text) ?? 0) * (add ? 1 : -1);
-                  int newBalance = client.balance + amount;
-
-                  Get.back();
-                  await ClientCloudDb.instance.updateClient(
-                    clientId: client.id,
-                    balance: newBalance,
-                  );
-                  await TransactionCloudDb.instance.addTransaction(
-                    LaundryTransaction(
-                      id: "",
-                      type: amount >= 0 ? "added" : "removed",
-                      amount: amount.abs(),
-                      curBal: newBalance,
-                      client: client.copyWith(balance: newBalance),
-                      date: DateTime.now(),
-                      updatedAt: 0,
-                      deleted: false,
-                    ),
-                  );
-                },
-                child: Text("Confirm"),
-              ),
+              child: Obx(() {
+                final loading = controller.isLoading.value;
+                
+                return ElevatedButton(
+                  // Disables the button immediately upon click by returning null
+                  onPressed: loading 
+                      ? null 
+                      : () => controller.updateBalance(client: client, add: add),
+                  child: loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Confirm"),
+                );
+              }),
             ),
           ],
         ),

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:laundary_app/data/controllers/order_controller.dart';
+import 'package:laundary_app/data/models/client.dart';
 import 'package:laundary_app/data/models/order.dart';
+import 'package:laundary_app/data/models/transaction.dart';
 
 class OrderCloudDb {
   static OrderCloudDb? _instance;
@@ -98,5 +100,74 @@ class OrderCloudDb {
   Future<void> deleteOrder(LaundryOrder order) async {
     await orders.doc(order.id).delete();
     OrderController.instance.deleteOrder(order);
+  }
+
+  Future<void> processDeliveryAtomic({
+    required LaundryOrder order,
+    required Client client,
+    required int amount,
+    required int newBalance,
+  }) async {
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
+    final orderRef = db.collection('orders').doc(order.id);
+    final clientRef = db.collection('clients').doc(client.id);
+    final txRef = db.collection('transactions').doc(); // Auto ID
+
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+
+    final tx = LaundryTransaction(
+      id: txRef.id,
+      type: "removed",
+      orderType: order.type,
+      amount: amount.abs(),
+      curBal: newBalance,
+      client: client.copyWith(balance: newBalance),
+      date: DateTime.now(),
+      updatedAt: currentTime,
+      deleted: false,
+    );
+
+    // Queue all three updates
+    batch.update(orderRef, order.toMap());
+    batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
+    batch.set(txRef, tx.toMap());
+
+    await batch.commit();
+  }
+
+  Future<void> processCancellationAtomic({
+    required LaundryOrder order,
+    required Client client,
+    required int amount,
+    required int newBalance,
+  }) async {
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
+    final orderRef = db.collection('orders').doc(order.id);
+    final clientRef = db.collection('clients').doc(client.id);
+    final txRef = db.collection('transactions').doc(); // Auto ID
+
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+
+    final tx = LaundryTransaction(
+      id: txRef.id,
+      type: "cancelled",
+      orderType: order.type,
+      amount: amount.abs(),
+      curBal: newBalance,
+      client: client.copyWith(balance: newBalance),
+      date: DateTime.now(),
+      updatedAt: currentTime,
+      deleted: false,
+    );
+
+    batch.update(orderRef, order.toMap());
+    batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
+    batch.set(txRef, tx.toMap());
+
+    await batch.commit();
   }
 }

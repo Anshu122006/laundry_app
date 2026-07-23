@@ -6,6 +6,7 @@ import 'package:laundary_app/core/utils/logging/logger.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/controllers/client_controller.dart';
 import 'package:laundary_app/data/models/client.dart';
+import 'package:laundary_app/data/models/transaction.dart';
 
 class ClientCloudDb {
   static ClientCloudDb? _instance;
@@ -202,5 +203,61 @@ class ClientCloudDb {
     } catch (e) {
       AppLogger.logInfo("Error removing FCM token: $e");
     }
+  }
+
+  // Inside ClientCloudDb class:
+
+  // Inside ClientCloudDb class:
+
+  Future<LaundryTransaction> updateBalanceAtomic({
+    required Client client,
+    required int amount,
+    required int newBalance,
+  }) async {
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
+    final clientRef = db.collection('clients').doc(client.id);
+    final transactionRef =
+        db.collection('transactions').doc(); // Generates auto ID
+
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
+
+    // 1. Construct the clean ledger entry model
+    final completedTransaction = LaundryTransaction(
+      id: transactionRef.id,
+      type: amount >= 0 ? "added" : "removed",
+      amount: amount.abs(),
+      curBal: newBalance,
+      client: client.copyWith(balance: newBalance),
+      date: DateTime.now(),
+      updatedAt: currentTime,
+      deleted: false,
+    );
+
+    // 2. Queue the updates to the atomic batch
+    batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
+    batch.set(transactionRef, completedTransaction.toMap());
+
+    // 3. Commit the batch atomically
+    await batch.commit();
+
+    // 4. CRITICAL FOR INSTANT UI REACTIVITY:
+    // Update local GetX state exactly like your normal updateClient() method does
+    final current = AuthController.instance.currentClient.value;
+    if (current != null && current.id == client.id) {
+      AuthController.instance.currentClient.value = current.copyWith(
+        balance: newBalance,
+        updatedAt: currentTime,
+      );
+    } else {
+      ClientController.instance.updateClient(
+        clientId: client.id,
+        balance: newBalance,
+      );
+    }
+
+    // Returns this object so the UI can update the transactions list
+    return completedTransaction;
   }
 }

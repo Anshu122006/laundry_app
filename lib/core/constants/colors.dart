@@ -51,4 +51,6 @@ class CColors {
 
   static Color snackbarColorLight = Colors.grey.shade100;
   static Color snackbarColorDark = Colors.grey.shade800;
+
+  // static Color? get  => null;
 }

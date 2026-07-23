@@ -62,6 +62,24 @@ flutter:
     - assets/logos/
     - assets/illustrations/
     - assets/images/
+  
+  fonts:
+    - family: DynaPuff
+      fonts:
+        - asset: assets/fonts/DynaPuff-Regular.ttf
+        - asset: assets/fonts/DynaPuff-Bold.ttf
+          weight: 700
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+        - asset: assets/font/Poppins-Italic.ttf
+          weight: 700
+    - family: Kaushan
+      fonts:
+        - asset: assets/fonts/Kaushan-Regular.ttf
+          weight: 700
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

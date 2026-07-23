@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:laundary_app/app/routes.dart';
 import 'package:laundary_app/core/constants/colors.dart';
+import 'package:laundary_app/core/constants/font_data.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/controllers/wash_type_controller.dart';
 import 'package:laundary_app/modules/client/home/widgets/home_wash_card.dart';
@@ -24,24 +24,24 @@ class ClientHomeHeader extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              right: 5,
-              top: 25,
-              child: Image.asset(
-                "assets/icons/offer_icon.png",
-                width: 70,
-                height: 70,
-              ),
-            ),
-            Positioned(
-              right: 15,
-              top: 34,
-              child: IconButton(
+              right: 10,
+              top: 30,
+              child: TextButton(
                 onPressed: () {
                   Get.toNamed(AppRoutes.offers);
                 },
-                icon: Icon(
-                  FontAwesomeIcons.info,
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blueAccent, 
+                ),
+                child: Text(
+                  "Offers/Info",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 18,
+                    fontStyle: FontStyle.italic,
+                    fontFamily: CFontFamily.dynaPuff,
+                    color: CColors.darkGrey,
+                  ),
                 ),
               ),
             ),
@@ -57,14 +57,17 @@ class ClientHomeHeader extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       color: CColors.secondaryColor,
                       fontWeight: FontWeight.w500,
+                      fontFamily: CFontFamily.poppins
                     ),
                   ),
                   Obx(
                     () => Text(
                       userdata.currentClient.value?.name ?? "",
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.headlineMedium!
-                          .copyWith(color: CColors.secondaryColor),
+                      style: Theme.of(context).textTheme.headlineMedium!.copyWith(
+                            color: CColors.secondaryColor,
+                            fontFamily: CFontFamily.poppins,
+                      ),
                     ),
                   ),
                   Text(
@@ -72,6 +75,7 @@ class ClientHomeHeader extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: CColors.secondaryColor,
                       fontWeight: FontWeight.w400,
+                      fontFamily: CFontFamily.poppins
                     ),
                   ),
                 ],
