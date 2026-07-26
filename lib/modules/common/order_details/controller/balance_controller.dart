@@ -37,7 +37,7 @@ class ClientBalanceController extends GetxController {
           .get(const GetOptions(source: Source.server))
           .timeout(const Duration(seconds: 3));
 
-      // 2. Execute the atomic batch (will update UI instantly)
+      // 2. Execute the atomic batch 
       // ignore: unused_local_variable
       final completedTx = await ClientCloudDb.instance.updateBalanceAtomic(
         client: client,

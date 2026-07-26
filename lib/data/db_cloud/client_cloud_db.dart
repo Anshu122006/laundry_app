@@ -223,7 +223,6 @@ class ClientCloudDb {
 
     final currentTime = DateTime.now().millisecondsSinceEpoch;
 
-    // 1. Construct the clean ledger entry model
     final completedTransaction = LaundryTransaction(
       id: transactionRef.id,
       type: amount >= 0 ? "added" : "removed",
@@ -235,14 +234,13 @@ class ClientCloudDb {
       deleted: false,
     );
 
-    // 2. Queue the updates to the atomic batch
+    // Queue the updates to the atomic batch
     batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
     batch.set(transactionRef, completedTransaction.toMap());
 
-    // 3. Commit the batch atomically
+    // Commit the batch atomically
     await batch.commit();
 
-    // 4. CRITICAL FOR INSTANT UI REACTIVITY:
     // Update local GetX state exactly like your normal updateClient() method does
     final current = AuthController.instance.currentClient.value;
     if (current != null && current.id == client.id) {
