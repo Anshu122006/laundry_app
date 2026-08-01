@@ -7,9 +7,10 @@ import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 class ClientDatePickerHelper {
   static void show() {
     final controller = Get.find<WalletScreenController>();
-    DateTime? startDate = controller.startDate.value;
-    DateTime? endDate = controller.endDate.value;
-    DateTime.now();
+
+    // Store local changes while interacting inside the bottom sheet
+    DateTime localStartDate = controller.startDate.value;
+    DateTime localEndDate = controller.endDate.value;
 
     Get.bottomSheet(
       SafeArea(
@@ -29,29 +30,33 @@ class ClientDatePickerHelper {
                 startRangeSelectionColor: CColors.primaryColor,
                 endRangeSelectionColor: CColors.primaryColor,
                 todayHighlightColor: CColors.blue,
-
-                onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
-                  if (args.value is PickerDateRange) {
-                    startDate = args.value.startDate;
-                    endDate = args.value.endDate;
-                  }
-                },
-                initialSelectedRange: PickerDateRange(startDate, endDate),
+                initialSelectedRange: PickerDateRange(
+                  localStartDate,
+                  localEndDate,
+                ),
                 minDate: DateTime(2020),
                 maxDate: DateTime.now(),
+                onSelectionChanged: (DateRangePickerSelectionChangedArgs args) {
+                  if (args.value is PickerDateRange) {
+                    if (args.value.startDate != null) {
+                      localStartDate = args.value.startDate!;
+                      // Fallback: if single day is tapped, use it as both start and end
+                      localEndDate =
+                          args.value.endDate ?? args.value.startDate!;
+                    }
+                  }
+                },
               ),
-
               const SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (startDate != null && endDate != null) {
-                      controller.startDate.value = startDate!;
-                      controller.endDate.value = endDate!;
-                      Get.back();
-                      controller.updateData();
-                    }
+                    // Updating these values automatically updates the totalOrders getter in your view
+                    controller.startDate.value = localStartDate;
+                    controller.endDate.value = localEndDate;
+
+                    Get.back();
                   },
                   child: const Text("Confirm"),
                 ),

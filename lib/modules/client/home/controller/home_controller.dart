@@ -6,45 +6,49 @@ import 'package:laundary_app/data/models/order.dart';
 import 'package:laundary_app/modules/client/home/view/confirmation_screen.dart';
 
 class ClientHomeScreenController extends GetxController {
-  final isLoading = false.obs;
-  Future placeOrder(String type) async {
+  final RxBool isLoading = false.obs;
+
+  Future<void> placeOrder(String type) async {
+    // Avoid multiple execution requests if clicked rapidly
+    if (isLoading.value) return;
+
     isLoading.value = true;
     try {
-      if ((AuthController.instance.currentClient.value?.balance ?? 0) < 100) {
+      final currentClient = AuthController.instance.currentClient.value;
+      final int balance = currentClient?.balance ?? 0;
+
+      if (balance < 100) {
         CDeviceHelper.showDialog(
           title: "Error",
-          message: "Insufficient balance",
-          onConfirm: () {
-            Get.back();
-            Get.back();
-          },
+          message: "Insufficient balance to place a new laundry request.",
+          onConfirm: () => Get.back(), // Safely remove dialog box only
         );
         return;
       }
-      LaundryOrder order = LaundryOrder(
+
+      final LaundryOrder order = LaundryOrder(
         id: "",
-        clientId: AuthController.instance.currentClient.value?.id ?? "",
+        clientId: currentClient?.id ?? "",
         type: type,
         placedDate: DateTime.now(),
         status: OrderStatus.pending,
         statusBeforeCancelled: OrderStatus.pending,
         clothes: 0,
-        updatedAt: 0,
-        deleted: false,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
         discount: 0,
         cost: 0,
       );
 
       await OrderCloudDb.instance.addOrder(order);
-      Get.off(() => OrderConfirmationScreen());
+
+      // Clean redirect to confirmation screen bypassing home backstack history
+      Get.off(() => const OrderConfirmationScreen());
     } catch (e) {
       CDeviceHelper.showDialog(
-        title: "Error",
-        message: "Unexpected error occured",
-        onConfirm: () {
-          Get.back();
-          Get.back();
-        },
+        title: "Order Failed",
+        message:
+            "An unexpected error occurred while placing your order. Please try again.",
+        onConfirm: () => Get.back(),
       );
     } finally {
       isLoading.value = false;

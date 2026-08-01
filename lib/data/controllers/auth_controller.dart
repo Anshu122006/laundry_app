@@ -18,9 +18,9 @@ class AuthController extends GetxController {
     return Get.find<AuthController>();
   }
 
-  Rxn<UserType> userType = Rxn<UserType>();
-  Rxn<Client> currentClient = Rxn<Client>();
-  Rxn<Employee> currentEmployee = Rxn<Employee>();
+  final Rxn<UserType> userType = Rxn<UserType>();
+  final Rxn<Client> currentClient = Rxn<Client>();
+  final Rxn<Employee> currentEmployee = Rxn<Employee>();
 
   Future<void> onLogin(UserType userType, String email) async {
     if (userType == UserType.client) {
@@ -28,23 +28,28 @@ class AuthController extends GetxController {
       currentClient.value = client;
       this.userType.value = UserType.client;
 
+      // Spin up the Delta Sync streams for client scopes
       await Future.wait([
-        OrderController.initController(clientId: client?.id ?? ""),
-        TransactionController.initController(clientId: client?.id ?? ""),
+        OrderController.initController(),
+        TransactionController.initController(),
       ]);
     } else {
       Employee? employee = await EmployeeCloudDb.instance.getEmployee(email);
       currentEmployee.value = employee;
-      this.userType.value =
+
+      final determinatedType =
           employee?.role.toLowerCase() == "admin"
               ? UserType.admin
               : UserType.employee;
+
+      this.userType.value = determinatedType;
 
       await Future.wait([
         OrderController.initController(),
         ClientController.initController(),
       ]);
-      if (this.userType.value == UserType.admin) {
+
+      if (determinatedType == UserType.admin) {
         await Future.wait([
           EmployeeController.initController(),
           TransactionController.initController(),
@@ -52,6 +57,7 @@ class AuthController extends GetxController {
       }
     }
 
+    // Initialize static configuration systems
     await Future.wait([
       PricingController.initController(),
       OfferController.initController(),
@@ -61,16 +67,25 @@ class AuthController extends GetxController {
   }
 
   Future<void> onLogout() async {
+    // 1. Terminate push notifications cleanly
     final client = currentClient.value;
     if (client != null) {
-      await ClientCloudDb.instance.removeFcmToken();
+      try {
+        await ClientCloudDb.instance.removeFcmToken();
+      } catch (_) {
+        // Suppress network errors during logout flow to avoid hard locks
+      }
     }
 
+    // 2. Clear out state parameters
     currentClient.value = null;
     currentEmployee.value = null;
     userType.value = null;
 
+    // 3. Delete dependencies (Triggers internal StreamSubscription cancels safely)
     Get.deleteAll();
+
+    // 4. Wipe high-speed Delta Sync storage caches
     await GetStorage().erase();
   }
 }

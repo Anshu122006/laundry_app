@@ -15,6 +15,7 @@ class OrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<OrderListController>();
+    final liveOrders = OrderController.instance.orders;
 
     return DefaultTabController(
       length: 4,
@@ -25,64 +26,45 @@ class OrdersScreen extends StatelessWidget {
           },
           body: TabBarView(
             children: [
+              // Tab 1: Pending Orders
               Obx(() {
-                final allOrders =
-                    OrderController.instance.orders
-                        .map((o) => o.value)
-                        .toList();
-                final orders =
+                final filtered =
                     controller
-                        .getFilteredOrders(allOrders)
+                        .getFilteredOrders(liveOrders)
                         .where((order) => order.status == OrderStatus.pending)
-                        .map((order) => order)
                         .toList();
-
-                return OrdersList(orders: orders);
+                return OrdersList(orders: filtered);
               }),
-              Obx(() {
-                final allOrders =
-                    OrderController.instance.orders
-                        .map((o) => o.value)
-                        .toList();
-                final orders =
-                    controller
-                        .getFilteredOrders(allOrders)
-                        .where(
-                          (order) =>
-                              order.status.value > 1 && order.status.value < 5,
-                        )
-                        .map((order) => order)
-                        .toList();
 
-                return OrdersList(orders: orders);
-              }),
+              // Tab 2: In-Progress Orders (Picked, Washing, Ready)
               Obx(() {
-                final allOrders =
-                    OrderController.instance.orders
-                        .map((o) => o.value)
-                        .toList();
-                final orders =
+                final filtered =
+                    controller.getFilteredOrders(liveOrders).where((order) {
+                      // Direct enum index boundaries check safely handling runtime states
+                      return order.status.index > OrderStatus.pending.index &&
+                          order.status.index < OrderStatus.delivered.index;
+                    }).toList();
+                return OrdersList(orders: filtered);
+              }),
+
+              // Tab 3: Delivered Orders
+              Obx(() {
+                final filtered =
                     controller
-                        .getFilteredOrders(allOrders)
+                        .getFilteredOrders(liveOrders)
                         .where((order) => order.status == OrderStatus.delivered)
-                        .map((order) => order)
                         .toList();
-
-                return OrdersList(orders: orders);
+                return OrdersList(orders: filtered);
               }),
-              Obx(() {
-                final allOrders =
-                    OrderController.instance.orders
-                        .map((o) => o.value)
-                        .toList();
-                final orders =
-                    controller
-                        .getFilteredOrders(allOrders)
-                        .where((order) => order.status == OrderStatus.cancelled)
-                        .map((order) => order)
-                        .toList();
 
-                return OrdersList(orders: orders);
+              // Tab 4: Cancelled Orders
+              Obx(() {
+                final filtered =
+                    controller
+                        .getFilteredOrders(liveOrders)
+                        .where((order) => order.status == OrderStatus.cancelled)
+                        .toList();
+                return OrdersList(orders: filtered);
               }),
             ],
           ),
@@ -99,23 +81,25 @@ class OrdersList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isClient = AuthController.instance.currentClient.value != null;
+    final isClient = AuthController.instance.currentClient.value != null;
 
     return Transform.translate(
-      offset: Offset(0, -25),
+      offset: const Offset(0, 0),
       child: ListView.builder(
         itemCount: orders.length,
+        padding: const EdgeInsets.only(bottom: 30),
         itemBuilder: (_, index) {
+          final targetOrder = orders[index];
+
           return OrderTile(
+            order: targetOrder,
             onTap:
                 isClient
-                    ? () =>
-                        Get.to(() => OrderStatusScreen(order: orders[index]))
+                    ? () => Get.to(() => OrderStatusScreen(order: targetOrder))
                     : () => Get.toNamed(
                       AppRoutes.orderDetails,
-                      arguments: orders[index],
+                      arguments: targetOrder,
                     ),
-            order: orders[index],
           );
         },
       ),

@@ -11,7 +11,7 @@ class EmployeeHomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AuthController userdata = AuthController.instance;
+    final userdata = AuthController.instance;
     final controller = Get.find<EmployeeHomeController>();
 
     return CSideRoundedCurve(
@@ -36,12 +36,17 @@ class EmployeeHomeHeader extends StatelessWidget {
                   ),
                   Obx(
                     () => Text(
-                      userdata.currentEmployee.value?.name ?? "",
+                      userdata.currentEmployee.value?.name ?? "Employee",
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.headlineMedium!
-                          .copyWith(color: CColors.secondaryColor),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineMedium!.copyWith(
+                        color: CColors.secondaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
                     "Check all current orders and their status,\neverything in one place!",
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
@@ -59,37 +64,35 @@ class EmployeeHomeHeader extends StatelessWidget {
               child: SizedBox(
                 height: 180,
                 width: double.infinity,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  shrinkWrap: true,
-                  children: [
-                    SizedBox(width: 20),
-                    Obx(
-                      () => OrderCard(
+                // Streamlined to use one clear parent Obx scope for dashboard dashboard metric collections
+                child: Obx(() {
+                  return ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(left: 20, right: 10),
+                    children: [
+                      OrderCard(
                         message: "Orders Placed\nToday",
-                        count: controller.placed.value,
+                        count: controller.placed,
                         backgroundColor: CColors.secondaryColor,
                         textColor: CColors.white,
                       ),
-                    ),
-                    Obx(
-                      () => OrderCard(
+                      const SizedBox(width: 12),
+                      OrderCard(
                         message: "Orders To\nPick",
-                        count: controller.toPick.value,
+                        count: controller.toPick,
                         backgroundColor: CColors.white,
                         textColor: CColors.secondaryColor,
                       ),
-                    ),
-                    Obx(
-                      () => OrderCard(
+                      const SizedBox(width: 12),
+                      OrderCard(
                         message: "Orders To\nDeliver",
-                        count: controller.toDeliver.value,
+                        count: controller.toDeliver,
                         backgroundColor: CColors.secondaryColor,
                         textColor: CColors.white,
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                }),
               ),
             ),
           ],

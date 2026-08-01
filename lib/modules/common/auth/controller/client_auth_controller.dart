@@ -79,7 +79,6 @@ class ClientAuthController extends GetxController {
           room: room.value,
           balance: 0,
           updatedAt: 0,
-          deleted: false,
         );
 
         await ClientCloudDb.instance.addClient(client, true);

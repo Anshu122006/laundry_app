@@ -16,7 +16,6 @@ dependencies:
   firebase_database: ^11.3.7
   cloud_firestore: ^5.0.0
   google_sign_in: ^6.1.5
-  connectivity_plus: ^6.0.3
   firebase_messaging: ^15.2.10
 
   # icons and formatting
@@ -40,6 +39,10 @@ dependencies:
 
   # to show date pickers
   syncfusion_flutter_datepicker: ^24.1.41
+
+  #for checking interner connection
+  connectivity_plus: ^7.3.1
+  internet_connection_checker_plus: ^3.1.1
 
 dev_dependencies:
   flutter_test:
@@ -73,7 +76,7 @@ flutter:
       fonts:
         - asset: assets/fonts/Poppins-Regular.ttf
         - asset: assets/fonts/Poppins-Bold.ttf
-        - asset: assets/font/Poppins-Italic.ttf
+        - asset: assets/fonts/Poppins-Italic.ttf
           weight: 700
     - family: Kaushan
       fonts:

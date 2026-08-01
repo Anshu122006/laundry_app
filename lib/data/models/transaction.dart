@@ -11,7 +11,6 @@ class LaundryTransaction {
   String? orderType;
   Client? client;
   int updatedAt;
-  bool deleted;
 
   LaundryTransaction({
     required this.id,
@@ -22,7 +21,6 @@ class LaundryTransaction {
     this.orderType,
     this.client,
     required this.updatedAt,
-    required this.deleted,
   });
 
   factory LaundryTransaction.fromJson(Map<String, dynamic> json) {
@@ -34,11 +32,12 @@ class LaundryTransaction {
       date:
           json['date'] is Timestamp
               ? (json['date'] as Timestamp).toDate()
-              : DateTime.parse(json['date']),
+              : DateTime.parse(
+                json['date'] ?? DateTime.now().toIso8601String(),
+              ),
       orderType: json["orderType"] ?? "",
       client: json["client"] != null ? Client.fromJson(json["client"]) : null,
       updatedAt: json["updatedAt"] ?? 0,
-      deleted: json["deleted"] == 1 || json["deleted"] == true,
     );
   }
 
@@ -48,11 +47,26 @@ class LaundryTransaction {
       "type": type,
       "amount": amount,
       "curBal": curBal,
-      "date": date,
+      "date":
+          date.toIso8601String(), // Convert to String so it safely stringifies to disk
       "orderType": orderType,
       "updatedAt": updatedAt,
       "client": client?.toMap(),
-      "deleted": deleted ? 1 : 0,
+    };
+  }
+
+  Map<String, dynamic> toFirestoreMap() {
+    return {
+      "id": id,
+      "type": type,
+      "amount": amount,
+      "curBal": curBal,
+      "date": Timestamp.fromDate(
+        date,
+      ), // Map cleanly to Firestore Timestamp structure
+      "orderType": orderType,
+      "updatedAt": updatedAt,
+      "client": client?.toMap(),
     };
   }
 
@@ -65,7 +79,6 @@ class LaundryTransaction {
     String? orderType,
     Client? client,
     int? updatedAt,
-    bool? deleted,
   }) {
     return LaundryTransaction(
       id: id ?? this.id,
@@ -76,7 +89,6 @@ class LaundryTransaction {
       orderType: orderType ?? this.orderType,
       client: client ?? this.client,
       updatedAt: updatedAt ?? this.updatedAt,
-      deleted: deleted ?? this.deleted,
     );
   }
 }

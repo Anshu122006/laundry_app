@@ -13,61 +13,6 @@ class PricingCloudDb {
   }
 
   final pricings = FirebaseFirestore.instance.collection('pricings');
-  // StreamSubscription? _subscription;
-
-  // Future<void> listenToChanges() async {
-  //   final box = GetStorage();
-  //   int lastSyncTime = box.read('last_sync_time') ?? 0;
-
-  //   await _subscription?.cancel();
-  //   _subscription = pricings
-  //       .where('updatedAt', isGreaterThan: lastSyncTime)
-  //       .snapshots()
-  //       .listen((querySnapshot) async {
-  //         int latestUpdate = lastSyncTime;
-
-  //         try {
-  //           for (var docChange in querySnapshot.docChanges) {
-  //             final data = docChange.doc.data();
-  //             if (data == null) continue;
-
-  //             final pricing = Pricing.fromJson(data);
-
-  //             if (pricing.updatedAt > latestUpdate) {
-  //               latestUpdate = pricing.updatedAt;
-  //             }
-
-  //             switch (docChange.type) {
-  //               case DocumentChangeType.added:
-  //               case DocumentChangeType.modified:
-  //                 if (!pricing.deleted) {
-  //                   await PricingLocalDb.instance.upsertPricing(pricing);
-  //                 } else {
-  //                   await PricingLocalDb.instance.deletePricing(pricing.id);
-  //                 }
-  //                 break;
-
-  //               case DocumentChangeType.removed:
-  //                 await PricingLocalDb.instance.deletePricing(pricing.id);
-  //                 break;
-  //             }
-  //           }
-
-  //           PricingController.instance.scheduleUpdate();
-
-  //           box.write('last_sync_time', latestUpdate);
-  //         } catch (e) {
-  //           // print('Error during pricing change listener: $e');
-  //         }
-  //       });
-  // }
-
-  // Future<void> removeListner() async {
-  //   await _subscription?.cancel();
-  //   _subscription = null;
-  // }
-
-  // Pricing CRUD Functions
 
   Future<String> addPricing(Pricing pricing) async {
     final docRef = await pricings.add(pricing.toMap());

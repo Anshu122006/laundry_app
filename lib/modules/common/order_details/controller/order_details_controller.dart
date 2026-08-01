@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/controllers/client_controller.dart';
+import 'package:laundary_app/data/controllers/order_controller.dart';
 import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
 import 'package:laundary_app/data/db_cloud/order_cloud_db.dart';
 import 'package:laundary_app/data/db_cloud/transaction_cloud_db.dart';
@@ -14,24 +16,39 @@ import 'package:laundary_app/data/services/notification_service.dart';
 class OrderDetailsController extends GetxController {
   OrderDetailsController(LaundryOrder initialOrder) : order = initialOrder.obs;
 
-  Rx<LaundryOrder> order;
+  final Rx<LaundryOrder> order;
   final RxBool hasUpdated = false.obs;
+  Worker? _globalOrderWorker;
 
-  Future<void> updateOrder(bool back) async {
+  @override
+  void onInit() {
+    super.onInit();
+    // Bind the detail screen to listen to real-time sync updates from the parent cache stream
+    _globalOrderWorker = ever(OrderController.instance.orders, (_) {
+      final updatedRemoteOrder = OrderController.instance.getOrder(
+        order.value.id,
+      );
+      if (updatedRemoteOrder != null) {
+        order.value = updatedRemoteOrder;
+      }
+    });
+  }
+
+  Future<void> _persistOrderUpdate() async {
     try {
       await OrderCloudDb.instance.updateOrder(order.value);
     } catch (e) {
       CDeviceHelper.showSnackbar(
         "Error",
-        "Some error occured while updating order",
+        "Some error occurred while updating order",
         CIcons.errorCross,
       );
     }
-    if (back) Get.back();
   }
 
   Future<void> updateStatus() async {
-    String agentId = AuthController.instance.currentEmployee.value?.id ?? "";
+    final String agentId =
+        AuthController.instance.currentEmployee.value?.id ?? "";
 
     switch (order.value.status) {
       case OrderStatus.pending:
@@ -71,20 +88,18 @@ class OrderDetailsController extends GetxController {
         );
         break;
       default:
+        return;
     }
 
-    order.refresh();
-    if (order.value.status == OrderStatus.delivered) {
-      await updateOrder(true);
-    } else {
-      await updateOrder(false);
-    }
+    await _persistOrderUpdate();
   }
 
   Future<void> addDeliveryTransaction() async {
-    Client? client = ClientController.instance.getClient(order.value.clientId);
-    int amount = order.value.cost - order.value.discount;
-    int bal = (client?.balance ?? 0) - amount;
+    final Client? client = ClientController.instance.getClient(
+      order.value.clientId,
+    );
+    final int amount = order.value.cost - order.value.discount;
+    final int bal = (client?.balance ?? 0) - amount;
 
     if (client != null) {
       await ClientCloudDb.instance.updateClient(
@@ -102,8 +117,7 @@ class OrderDetailsController extends GetxController {
         curBal: bal,
         client: client?.copyWith(balance: bal),
         date: DateTime.now(),
-        updatedAt: 0,
-        deleted: false,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
       ),
     );
   }
@@ -120,8 +134,9 @@ class OrderDetailsController extends GetxController {
     } else {
       client = ClientController.instance.getClient(order.value.clientId);
     }
-    int bal = client?.balance ?? 0;
-    int amount = order.value.cost - order.value.discount;
+
+    final int bal = client?.balance ?? 0;
+    final int amount = order.value.cost - order.value.discount;
 
     if (client != null) {
       await ClientCloudDb.instance.updateClient(
@@ -139,49 +154,37 @@ class OrderDetailsController extends GetxController {
         curBal: bal,
         client: client?.copyWith(balance: bal),
         date: DateTime.now(),
-        updatedAt: 0,
-        deleted: false,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
       ),
     );
-    await updateOrder(true);
+    await _persistOrderUpdate();
   }
 
   Future<void> updateDeliveryDate(DateTime deliveryDate) async {
     order.value = order.value.copyWith(deliveryDate: deliveryDate);
-    await updateOrder(false);
+    await _persistOrderUpdate();
   }
 
   Future<void> setClothes(int clothes) async {
-    order.value.clothes = clothes;
-    await updateOrder(false);
+    order.value = order.value.copyWith(clothes: clothes);
+    await _persistOrderUpdate();
   }
 
   Future<void> setCost(int cost) async {
-    order.value.cost = cost;
-    await updateOrder(false);
+    order.value = order.value.copyWith(cost: cost);
+    await _persistOrderUpdate();
   }
 
   Future<void> setDiscount(int discount) async {
-    if (order.value.cost - discount > 0) {
-      order.value.discount = discount;
-    } else {
-      order.value.discount = order.value.cost;
-    }
-    await updateOrder(false);
+    final int calculatedDiscount =
+        (order.value.cost - discount > 0) ? discount : order.value.cost;
+    order.value = order.value.copyWith(discount: calculatedDiscount);
+    await _persistOrderUpdate();
   }
 
-  // void updateItems(List<String> name, List<int> amount) {
-  //   // final updatedItems = Map<String, int>.from(order.value.orderTypeCounts);
-
-  //   for (int i = 0; i < name.length; i++) {
-  //     if (amount[i] > 0) {
-  //       updatedItems[name[i]] = amount[i];
-  //     } else if (order.value.orderTypeCounts.containsKey(name[i])) {
-  //       updatedItems.remove(name[i]);
-  //     }
-  //   }
-
-  //   order.value = order.value.copyWith(orderTypeCounts: updatedItems);
-  //   hasUpdated.value = true;
-  // }
+  @override
+  void onClose() {
+    _globalOrderWorker?.dispose();
+    super.onClose();
+  }
 }

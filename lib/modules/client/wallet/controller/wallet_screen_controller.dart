@@ -2,39 +2,26 @@ import 'package:get/get.dart';
 import 'package:laundary_app/data/controllers/order_controller.dart';
 
 class WalletScreenController extends GetxController {
-  @override
-  void onInit() {
-    super.onInit();
+  // Configurable date boundaries
+  final Rx<DateTime> startDate =
+      DateTime.now().subtract(const Duration(days: 7)).obs;
+  final Rx<DateTime> endDate = DateTime.now().obs;
 
-    ever(OrderController.instance.orders, (_) => getTotalOrders());
+  // Track user input values safely
+  final RxString addIncomeValue = "".obs;
+  final RxString addExpenseValue = "".obs;
 
-    startDate.value = DateTime.now().subtract(Duration(days: 7));
-    endDate.value = DateTime.now().add(Duration(days: 1));
-    updateData();
-  }
+  // Internal helper properties to get normalized timestamps for range comparisons
+  int get _startTimestamp => startDate.value.millisecondsSinceEpoch;
+  int get _endTimestamp =>
+      endDate.value.add(const Duration(days: 1)).millisecondsSinceEpoch;
 
-  RxInt orders = 0.obs;
-  Rx<DateTime> startDate = DateTime.now().subtract(Duration(days: 7)).obs;
-  Rx<DateTime> endDate = DateTime.now().obs;
-  RxString addIncomeValue = "".obs;
-  RxString addExpenseValue = "".obs;
-
-  void updateData() {
-    getTotalOrders();
-  }
-
-  void getTotalOrders() {
-    int start = startDate.value.millisecondsSinceEpoch;
-    int end = endDate.value.add(Duration(days: 1)).millisecondsSinceEpoch;
-
-    int orders =
-        OrderController.instance.orders
-            .where(
-              (o) =>
-                  o.value.placedDate.millisecondsSinceEpoch >= start &&
-                  o.value.placedDate.millisecondsSinceEpoch <= end,
-            )
-            .length;
-    this.orders.value = orders;
+  /// Realtime reactive count of orders inside the selected date interval.
+  /// This automatically recalculates when the date range or order collection updates.
+  int get totalOrders {
+    return OrderController.instance.orders.where((o) {
+      final orderTime = o.value.placedDate.millisecondsSinceEpoch;
+      return orderTime >= _startTimestamp && orderTime <= _endTimestamp;
+    }).length;
   }
 }

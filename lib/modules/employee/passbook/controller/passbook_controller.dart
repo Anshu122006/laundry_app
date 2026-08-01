@@ -4,140 +4,68 @@ import 'package:laundary_app/data/controllers/transaction_controller.dart';
 import 'package:laundary_app/data/models/transaction.dart';
 
 class PassbookScreenController extends GetxController {
-  @override
-  void onInit() {
-    super.onInit();
+  // Configurable date boundaries
+  final Rx<DateTime> startDate =
+      DateTime.now().subtract(const Duration(days: 7)).obs;
+  final Rx<DateTime> endDate = DateTime.now().obs;
 
-    ever(OrderController.instance.orders, (_) => getTotalOrders());
-    ever(TransactionController.instance.transactions, (_) => getTotalAdded());
-    ever(
-      TransactionController.instance.transactions,
-      (_) => getRemovedUnordered(),
-    );
-    ever(
-      TransactionController.instance.transactions,
-      (_) => getRemovedOrdered(),
-    );
+  // Track user input values safely
+  final RxString addValue = "".obs;
+  final RxString removedValue = "".obs;
 
-    startDate.value = DateTime.now().subtract(Duration(days: 7));
-    endDate.value = DateTime.now().add(Duration(days: 1));
-    updateData();
+  // Internal helper to get normalized timestamps for range comparisons
+  int get _startTimestamp => startDate.value.millisecondsSinceEpoch;
+  int get _endTimestamp =>
+      endDate.value.add(const Duration(days: 1)).millisecondsSinceEpoch;
+
+  // ─── REALTIME CALCULATED GETTERS ──────────────────────────────────────────
+
+  /// Realtime reactive count of orders inside the selected date interval
+  int get totalOrders {
+    return OrderController.instance.orders.where((o) {
+      final orderTime = o.value.placedDate.millisecondsSinceEpoch;
+      return orderTime >= _startTimestamp && orderTime <= _endTimestamp;
+    }).length;
   }
 
-  RxInt orders = 0.obs;
-  RxInt added = 0.obs;
-  RxInt removedOrdered = 0.obs;
-  RxInt removedUnordered = 0.obs;
-  Rx<DateTime> startDate = DateTime.now().subtract(Duration(days: 7)).obs;
-  Rx<DateTime> endDate = DateTime.now().obs;
-  RxString addValue = "".obs;
-  RxString removedValue = "".obs;
-
-  void updateData() {
-    getTotalOrders();
-    getTotalAdded();
-    getRemovedUnordered();
-    getRemovedOrdered();
+  /// Realtime filter for all transactions within the selected date interval
+  List<LaundryTransaction> get _filteredTransactions {
+    return TransactionController.instance.transactions
+        .map((t) => t.value)
+        .where((t) {
+          final txnTime = t.date.millisecondsSinceEpoch;
+          return txnTime >= _startTimestamp && txnTime <= _endTimestamp;
+        })
+        .toList();
   }
 
-  void getTotalOrders() {
-    int start = startDate.value.millisecondsSinceEpoch;
-    int end = endDate.value.add(Duration(days: 1)).millisecondsSinceEpoch;
-
-    int orders =
-        OrderController.instance.orders
-            .where(
-              (o) =>
-                  o.value.placedDate.millisecondsSinceEpoch >= start &&
-                  o.value.placedDate.millisecondsSinceEpoch <= end,
-            )
-            .length;
-    this.orders.value = orders;
-  }
-
-  void getTotalAdded() {
-    int start = startDate.value.millisecondsSinceEpoch;
-    int end = endDate.value.add(Duration(days: 1)).millisecondsSinceEpoch;
-
-    List<LaundryTransaction> transactions =
-        TransactionController.instance.transactions
-            .map((t) => t.value)
-            .where(
-              (t) =>
-                  t.date.millisecondsSinceEpoch >= start &&
-                  t.date.millisecondsSinceEpoch <= end,
-            )
-            .toList();
-    int added = transactions
+  /// Realtime summation of added funds
+  int get totalAdded {
+    return _filteredTransactions
         .where((t) => t.type == "added")
         .fold(0, (sum, t) => sum + t.amount);
-
-    this.added.value = added;
   }
 
-  void getRemovedUnordered() {
-    int start = startDate.value.millisecondsSinceEpoch;
-    int end = endDate.value.add(Duration(days: 1)).millisecondsSinceEpoch;
-
-    List<LaundryTransaction> transactions =
-        TransactionController.instance.transactions
-            .map((t) => t.value)
-            .where(
-              (t) =>
-                  t.date.millisecondsSinceEpoch >= start &&
-                  t.date.millisecondsSinceEpoch <= end,
-            )
-            .toList();
-    int removedUnordered = transactions
-        .where((t) => t.type == "removed" && t.orderType == "")
+  /// Realtime summation of unordered deductions
+  int get totalRemovedUnordered {
+    return _filteredTransactions
+        .where(
+          (t) =>
+              t.type == "removed" && (t.orderType == null || t.orderType == ""),
+        )
         .fold(0, (sum, t) => sum + t.amount);
-
-    this.removedUnordered.value = removedUnordered;
   }
 
-  void getRemovedOrdered() {
-    int start = startDate.value.millisecondsSinceEpoch;
-    int end = endDate.value.add(Duration(days: 1)).millisecondsSinceEpoch;
-
-    List<LaundryTransaction> transactions =
-        TransactionController.instance.transactions
-            .map((t) => t.value)
-            .where(
-              (t) =>
-                  t.date.millisecondsSinceEpoch >= start &&
-                  t.date.millisecondsSinceEpoch <= end,
-            )
-            .toList();
-    int removedOrdered = transactions
-        .where((t) => t.type == "removed" && t.orderType != "")
+  /// Realtime summation of ordered deductions
+  int get totalRemovedOrdered {
+    return _filteredTransactions
+        .where(
+          (t) =>
+              t.type == "removed" && t.orderType != null && t.orderType != "",
+        )
         .fold(0, (sum, t) => sum + t.amount);
-
-    this.removedOrdered.value = removedOrdered;
   }
 
-  // Future addAmount(int amount) async {
-  //   await TransactionCloudDb.instance.addTransaction(
-  //     LaundryTransaction(
-  //       id: "",
-  //       type: amount >= 0 ? "added" : "removed",
-  //       amount: amount,
-  //       date: DateTime.now(),
-  //       updatedAt: 0,
-  //       deleted: false,
-  //     ),
-  //   );
-  // }
-
-  // Future addremoved() async {
-  //   await TransactionCloudDb.instance.addTransaction(
-  //     LaundryTransaction(
-  //       id: "",
-  //       type: "removed",
-  //       amount: int.parse(addremovedValue.value),
-  //       date: DateTime.now(),
-  //       updatedAt: 0,
-  //       deleted: false,
-  //     ),
-  //   );
-  // }
+  /// Realtime balance generation
+  int get netChange => totalAdded - totalRemovedOrdered - totalRemovedUnordered;
 }

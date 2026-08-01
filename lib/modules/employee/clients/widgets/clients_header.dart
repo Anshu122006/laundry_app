@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:laundary_app/core/constants/colors.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
-import 'package:laundary_app/modules/employee/clients/controller/client_controller.dart';
+import 'package:laundary_app/modules/employee/clients/controller/client_screen_controller.dart';
 import 'package:laundary_app/shared/edges/bottom_inward_curved.dart';
 import 'package:laundary_app/shared/widgets/searchbar.dart';
 

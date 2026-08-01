@@ -13,60 +13,6 @@ class OfferCloudDb {
   }
 
   final offers = FirebaseFirestore.instance.collection('offers');
-  // StreamSubscription? _subscription;
-
-  // Future<void> listenToChanges() async {
-  //   final box = GetStorage();
-  //   int lastSyncTime = box.read('offer_last_sync_time') ?? 0;
-
-  //   await _subscription?.cancel();
-  //   _subscription = offers
-  //       .where('updatedAt', isGreaterThan: lastSyncTime)
-  //       .snapshots()
-  //       .listen((querySnapshot) async {
-  //         int latestUpdate = lastSyncTime;
-
-  //         try {
-  //           for (var docChange in querySnapshot.docChanges) {
-  //             final data = docChange.doc.data();
-  //             if (data == null) continue;
-
-  //             final offer = Offer.fromJson(data);
-
-  //             if (offer.updatedAt > latestUpdate) {
-  //               latestUpdate = offer.updatedAt;
-  //             }
-
-  //             switch (docChange.type) {
-  //               case DocumentChangeType.added:
-  //               case DocumentChangeType.modified:
-  //                 if (!offer.deleted) {
-  //                   await OfferLocalDb.instance.upsertOffer(offer);
-  //                 } else {
-  //                   await OfferLocalDb.instance.deleteOffer(offer.id);
-  //                 }
-  //                 break;
-  //               case DocumentChangeType.removed:
-  //                 await OfferLocalDb.instance.deleteOffer(offer.id);
-  //                 break;
-  //             }
-  //           }
-
-  //           OfferController.instance.scheduleUpdate();
-
-  //           box.write('offer_last_sync_time', latestUpdate);
-  //         } catch (e) {
-  //           // print('Error during offer change listener: $e');
-  //         }
-  //       });
-  // }
-
-  // Future<void> removeListner() async {
-  //   await _subscription?.cancel();
-  //   _subscription = null;
-  // }
-
-  // Offer CRUD Functions
 
   Future<String> addOffer(Offer offer) async {
     final docRef = await offers.add(offer.toMap());

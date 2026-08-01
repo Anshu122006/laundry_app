@@ -15,64 +15,19 @@ class OrderCloudDb {
   }
 
   final orders = FirebaseFirestore.instance.collection('orders');
-  // StreamSubscription? _subscription;
 
-  // Future<void> listenToChanges(String? clientId) async {
-  //   final box = GetStorage();
-  //   int lastSyncTime = box.read('Order_last_sync_time') ?? 0;
-
-  //   var query = orders.where('updatedAt', isGreaterThan: lastSyncTime);
-  //   if (clientId != null) {
-  //     query = orders
-  //         .where('clientId', isEqualTo: clientId)
-  //         .where('updatedAt', isGreaterThan: lastSyncTime);
-  //   }
-
-  //   await _subscription?.cancel();
-  //   _subscription = query.snapshots().listen((querySnapshot) async {
-  //     int latestUpdate = lastSyncTime;
-
-  //     try {
-  //       for (var docChange in querySnapshot.docChanges) {
-  //         final data = docChange.doc.data();
-  //         if (data == null) continue;
-
-  //         final order = LaundryOrder.fromJson(data);
-
-  //         if (order.updatedAt > latestUpdate) {
-  //           latestUpdate = order.updatedAt;
-  //         }
-
-  //         switch (docChange.type) {
-  //           case DocumentChangeType.added:
-  //           case DocumentChangeType.modified:
-  //             if (!order.deleted) {
-  //               await OrderLocalDb.instance.upsertOrder(order);
-  //             } else {
-  //               await OrderLocalDb.instance.deleteOrder(order.id);
-  //             }
-  //             break;
-  //           case DocumentChangeType.removed:
-  //             await OrderLocalDb.instance.deleteOrder(order.id);
-  //             break;
-  //         }
-  //       }
-
-  //       OrderController.instance.scheduleUpdate();
-
-  //       box.write('Order_last_sync_time', latestUpdate);
-  //     } catch (e) {
-  //       // print('Error during order change listener: $e');
-  //     }
-  //   });
-  // }
-
-  // Future<void> removeListner() async {
-  //   await _subscription?.cancel();
-  //   _subscription = null;
-  // }
-
-  // Order CRUD Functions
+  /// Streams only orders modified or created after the local cache's highest timestamp
+  Stream<List<LaundryOrder>> watchOrders({required int lastSyncTime}) {
+    return orders
+        .where('updatedAt', isGreaterThan: lastSyncTime)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => LaundryOrder.fromJson(doc.data()))
+                  .toList(),
+        );
+  }
 
   Future<String> addOrder(LaundryOrder order) async {
     final docRef = await orders.add(order.toFirestoreMap());
@@ -85,16 +40,6 @@ class OrderCloudDb {
   Future<void> updateOrder(LaundryOrder order) async {
     await orders.doc(order.id).update(order.toFirestoreMap());
     OrderController.instance.updateOrder(order);
-  }
-
-  Future<List<LaundryOrder>> getAllOrders({String? clientId}) async {
-    QuerySnapshot<Map<String, dynamic>> query;
-    if (clientId != null) {
-      query = await orders.where("clientId", isEqualTo: clientId).get();
-    } else {
-      query = await orders.get();
-    }
-    return query.docs.map((doc) => LaundryOrder.fromJson(doc.data())).toList();
   }
 
   Future<void> deleteOrder(LaundryOrder order) async {
@@ -126,13 +71,12 @@ class OrderCloudDb {
       client: client.copyWith(balance: newBalance),
       date: DateTime.now(),
       updatedAt: currentTime,
-      deleted: false,
     );
 
-    // Queue all three updates
-    batch.update(orderRef, order.toMap());
+    // Queue updates using native Firestore mapping rules
+    batch.update(orderRef, order.toFirestoreMap());
     batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
-    batch.set(txRef, tx.toMap());
+    batch.set(txRef, tx.toFirestoreMap());
 
     await batch.commit();
   }
@@ -161,13 +105,34 @@ class OrderCloudDb {
       client: client.copyWith(balance: newBalance),
       date: DateTime.now(),
       updatedAt: currentTime,
-      deleted: false,
     );
 
-    batch.update(orderRef, order.toMap());
+    batch.update(orderRef, order.toFirestoreMap());
     batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
-    batch.set(txRef, tx.toMap());
+    batch.set(txRef, tx.toFirestoreMap());
 
     await batch.commit();
+  }
+
+  Future<void> cleanUpOrdersCollection() async {
+    final collectionRef = FirebaseFirestore.instance.collection('orders');
+    final snapshot = await collectionRef.get();
+
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+
+    for (var doc in snapshot.docs) {
+      // If the legacy document explicitly contains the old field
+      if (doc.data().containsKey('deleted')) {
+        batch.update(doc.reference, {
+          // FieldValue.delete() completely scrubs the key out of the remote document record
+          'deleted': FieldValue.delete(),
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+    }
+
+    // Execute structural migrations instantly
+    await batch.commit();
+    print("Database cleanup complete! All stale order columns scrubbed.");
   }
 }

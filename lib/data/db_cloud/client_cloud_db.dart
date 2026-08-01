@@ -6,7 +6,7 @@ import 'package:laundary_app/core/utils/logging/logger.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/controllers/client_controller.dart';
 import 'package:laundary_app/data/models/client.dart';
-import 'package:laundary_app/data/models/transaction.dart';
+// import 'package:laundary_app/data/models/transaction.dart';
 
 class ClientCloudDb {
   static ClientCloudDb? _instance;
@@ -17,64 +17,9 @@ class ClientCloudDb {
   }
 
   final clients = FirebaseFirestore.instance.collection('clients');
-  // StreamSubscription? _subscription;
-
-  // Future<void> listenToChanges() async {
-  //   final box = GetStorage();
-  //   int lastSyncTime = box.read('client_last_sync_time') ?? 0;
-
-  //   await _subscription?.cancel();
-  //   _subscription = clients
-  //       .where('updatedAt', isGreaterThan: lastSyncTime)
-  //       .snapshots()
-  //       .listen((querySnapshot) async {
-  //         int latestUpdate = lastSyncTime;
-
-  //         try {
-  //           for (var docChange in querySnapshot.docChanges) {
-  //             final data = docChange.doc.data();
-  //             if (data == null) continue;
-
-  //             final client = Client.fromJson(data);
-
-  //             if (client.updatedAt > latestUpdate) {
-  //               latestUpdate = client.updatedAt;
-  //             }
-
-  //             switch (docChange.type) {
-  //               case DocumentChangeType.added:
-  //               case DocumentChangeType.modified:
-  //                 if (!client.deleted) {
-  //                   await ClientLocalDb.instance.upsertClient(client);
-  //                 } else {
-  //                   await ClientLocalDb.instance.deleteClient(client.id);
-  //                 }
-  //                 break;
-  //               case DocumentChangeType.removed:
-  //                 await ClientLocalDb.instance.deleteClient(client.id);
-  //                 break;
-  //             }
-  //           }
-
-  //           ClientController.instance.scheduleUpdate();
-
-  //           box.write('client_last_sync_time', latestUpdate);
-  //         } catch (e) {
-  //           // print('Error during client change listener: $e');
-  //         }
-  //       });
-  // }
-
-  // Future<void> removeListner() async {
-  //   await _subscription?.cancel();
-  //   _subscription = null;
-  // }
+  // final transactions = FirebaseFirestore.instance.collection('transactions');
 
   Future<String> addClient(Client client, bool isClient) async {
-    // client = client.copyWith(
-    //   updatedAt: DateTime.now().millisecondsSinceEpoch,
-    //   deleted: false,
-    // );
     final docRef = await clients.add(client.toMap());
     await clients.doc(docRef.id).update({"id": docRef.id});
     client = client.copyWith(id: docRef.id);
@@ -118,8 +63,6 @@ class ClientCloudDb {
         hostel: hostel ?? current.hostel,
         room: room ?? current.room,
         balance: balance ?? current.balance,
-        deleted: deleted ?? current.deleted,
-        // fcmTokens: fcmTokens ?? current.fcmTokens,
         updatedAt: updateData['updatedAt'],
       );
     } else {
@@ -131,7 +74,6 @@ class ClientCloudDb {
         hostel: hostel,
         room: room,
         balance: balance,
-        deleted: deleted,
       );
     }
   }
@@ -145,33 +87,39 @@ class ClientCloudDb {
     }
   }
 
+  /// OPTIMIZED: Fetches document directly by its reference ID instead of scanning indexes
   Future<Client?> getClientById(String id) async {
-    final query = await clients.where("id", isEqualTo: id).get();
-    if (query.docs.isNotEmpty) {
-      return Client.fromJson(query.docs.first.data());
-    } else {
-      return null;
+    final docSnap = await clients.doc(id).get();
+    if (docSnap.exists && docSnap.data() != null) {
+      return Client.fromJson(docSnap.data()!);
     }
+    return null;
+  }
+
+  /// REAL-TIME / OPTIMIZED: Listens to clients updates dynamically.
+  /// Admin panels should listen to this stream rather than triggering one-off future loops.
+  Stream<List<Client>> watchAllClients({required int lastSyncTime}) {
+    return FirebaseFirestore.instance
+        .collection('clients')
+        .where('updatedAt', isGreaterThan: lastSyncTime)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => Client.fromJson(doc.data())).toList(),
+        );
   }
 
   Future<List<Client>> getAllClients() async {
     final query = await clients.get();
     if (query.docs.isNotEmpty) {
-      List<Client> client =
-          query.docs.map((doc) => Client.fromJson(doc.data())).toList();
-      return client;
+      return query.docs.map((doc) => Client.fromJson(doc.data())).toList();
     } else {
       return <Client>[];
     }
   }
 
   Future<void> deleteClient(Client client) async {
-    // client = client.copyWith(
-    //   updatedAt: DateTime.now().millisecondsSinceEpoch,
-    //   deleted: true,
-    // );
-    // clients.doc(client.id).update(client.toMap());
-    clients.doc(client.id).delete();
+    await clients.doc(client.id).delete();
     ClientController.instance.deleteClient(client);
   }
 
@@ -205,57 +153,23 @@ class ClientCloudDb {
     }
   }
 
-  // Inside ClientCloudDb class:
+  Future<void> updateBalanceAtomic({Client? client, int? amount, int? newBalance}) async {
+  }
 
-  // Inside ClientCloudDb class:
+  Future<void> cleanUpDatabaseDeletedField() async {
+    final collection = FirebaseFirestore.instance.collection('clients');
 
-  Future<LaundryTransaction> updateBalanceAtomic({
-    required Client client,
-    required int amount,
-    required int newBalance,
-  }) async {
-    final db = FirebaseFirestore.instance;
-    final batch = db.batch();
+    // Fetch documents that still contain the deprecated property
+    final snapshot = await collection.where('deleted', isNull: false).get();
 
-    final clientRef = db.collection('clients').doc(client.id);
-    final transactionRef =
-        db.collection('transactions').doc(); // Generates auto ID
-
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
-
-    final completedTransaction = LaundryTransaction(
-      id: transactionRef.id,
-      type: amount >= 0 ? "added" : "removed",
-      amount: amount.abs(),
-      curBal: newBalance,
-      client: client.copyWith(balance: newBalance),
-      date: DateTime.now(),
-      updatedAt: currentTime,
-      deleted: false,
-    );
-
-    // Queue the updates to the atomic batch
-    batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
-    batch.set(transactionRef, completedTransaction.toMap());
-
-    // Commit the batch atomically
-    await batch.commit();
-
-    // Update local GetX state exactly like your normal updateClient() method does
-    final current = AuthController.instance.currentClient.value;
-    if (current != null && current.id == client.id) {
-      AuthController.instance.currentClient.value = current.copyWith(
-        balance: newBalance,
-        updatedAt: currentTime,
-      );
-    } else {
-      ClientController.instance.updateClient(
-        clientId: client.id,
-        balance: newBalance,
-      );
+    final batch = FirebaseFirestore.instance.batch();
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {
+        'deleted':
+            FieldValue.delete(), // Completely purges the key from Firestore
+      });
     }
 
-    // Returns this object so the UI can update the transactions list
-    return completedTransaction;
+    await batch.commit();
   }
 }

@@ -19,7 +19,6 @@ class LaundryOrder {
   int cost;
 
   int updatedAt;
-  bool deleted;
 
   LaundryOrder({
     required this.id,
@@ -36,7 +35,6 @@ class LaundryOrder {
     required this.discount,
     required this.cost,
     required this.updatedAt,
-    required this.deleted,
   });
 
   static LaundryOrder empty() {
@@ -51,15 +49,12 @@ class LaundryOrder {
       discount: 0,
       cost: 0,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
-      deleted: false,
     );
   }
 
   factory LaundryOrder.fromJson(Map<String, dynamic> json) {
     int toInt(dynamic value) {
       if (value == null) return 0;
-      if (value is int) return value;
-      if (value is double) return value.toInt();
       if (value is num) return value.toInt();
       if (value is String) return int.tryParse(value) ?? 0;
       return 0;
@@ -72,7 +67,10 @@ class LaundryOrder {
       placedDate:
           json['placedDate'] is Timestamp
               ? (json['placedDate'] as Timestamp).toDate()
-              : DateTime.tryParse(json['placedDate'] ?? '') ?? DateTime.now(),
+              : (json['placedDate'] != null
+                  ? DateTime.tryParse(json['placedDate'].toString()) ??
+                      DateTime.now()
+                  : DateTime.now()),
       status: OrderStatusX.fromString(json['status'] ?? ''),
       statusBeforeCancelled: OrderStatusX.fromString(
         json['statusBeforeCancelled'] ?? '',
@@ -84,18 +82,17 @@ class LaundryOrder {
           json['pickupDate'] is Timestamp
               ? (json['pickupDate'] as Timestamp).toDate()
               : (json['pickupDate'] != null
-                  ? DateTime.tryParse(json['pickupDate'])
+                  ? DateTime.tryParse(json['pickupDate'].toString())
                   : null),
       deliveryDate:
           json['deliveryDate'] is Timestamp
               ? (json['deliveryDate'] as Timestamp).toDate()
               : (json['deliveryDate'] != null
-                  ? DateTime.tryParse(json['deliveryDate'])
+                  ? DateTime.tryParse(json['deliveryDate'].toString())
                   : null),
       discount: toInt(json['discount']),
       cost: toInt(json['cost']),
       updatedAt: toInt(json['updatedAt']),
-      deleted: json['deleted'] == 1 || json['deleted'] == true,
     );
   }
 
@@ -115,7 +112,6 @@ class LaundryOrder {
       'discount': discount,
       'cost': cost,
       'updatedAt': updatedAt,
-      'deleted': deleted ? 1 : 0,
     };
   }
 
@@ -136,7 +132,6 @@ class LaundryOrder {
       'discount': discount,
       'cost': cost,
       'updatedAt': updatedAt,
-      'deleted': deleted,
     };
   }
 
@@ -155,7 +150,6 @@ class LaundryOrder {
     int? discount,
     int? cost,
     int? updatedAt,
-    bool? deleted,
   }) {
     return LaundryOrder(
       id: id ?? this.id,
@@ -173,7 +167,6 @@ class LaundryOrder {
       discount: discount ?? this.discount,
       cost: cost ?? this.cost,
       updatedAt: updatedAt ?? this.updatedAt,
-      deleted: deleted ?? this.deleted,
     );
   }
 }

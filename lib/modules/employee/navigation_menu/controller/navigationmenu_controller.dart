@@ -4,7 +4,7 @@ import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/modules/common/orders/controller/orders_controller.dart';
 import 'package:laundary_app/modules/employee/account/controller/account_controller.dart';
 import 'package:laundary_app/modules/employee/account/view/_main_screen.dart';
-import 'package:laundary_app/modules/employee/clients/controller/client_controller.dart';
+import 'package:laundary_app/modules/employee/clients/controller/client_screen_controller.dart';
 import 'package:laundary_app/modules/employee/clients/view/_main_screen.dart';
 import 'package:laundary_app/modules/employee/employees/controller/employee_controller.dart';
 import 'package:laundary_app/modules/employee/employees/view/_main_screen.dart';

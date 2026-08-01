@@ -15,87 +15,93 @@ class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<WalletScreenController>();
-    AuthController userdata = AuthController.instance;
+    final userdata = AuthController.instance;
 
     return Scaffold(
-      body: LayoutBuilder(
-        builder:
-            (context, constraints) => ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 20, left: 15, right: 15),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20, left: 15),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: CBackButton(),
-                          ),
-                        ),
-                        Transform.translate(
-                          offset: Offset(0, 16),
-                          child: IconButton(
-                            onPressed: () {
-                              ClientDatePickerHelper.show();
-                            },
-                            icon: Icon(
-                              Icons.calendar_month,
-                              size: 32,
-                              color:
-                                  CDeviceHelper.isDarkMode()
-                                      ? CColors.light
-                                      : CColors.dark,
-                            ),
-                          ),
-                        ),
-                      ],
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: CBackButton(),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 25),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Wallet",
-                          style: Theme.of(context).textTheme.headlineLarge,
+                    Transform.translate(
+                      offset: const Offset(0, 16),
+                      child: IconButton(
+                        onPressed: () => ClientDatePickerHelper.show(),
+                        icon: Icon(
+                          Icons.calendar_month,
+                          size: 32,
+                          color:
+                              CDeviceHelper.isDarkMode()
+                                  ? CColors.light
+                                  : CColors.dark,
                         ),
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Image(image: AssetImage("assets/illustrations/wallet.png")),
-                    SizedBox(height: 10),
-                    Text(
-                      "Curent Balace: ₹${userdata.currentClient.value?.balance ?? 0}",
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    Obx(
-                      () => Text(
-                        "Orders Placed: ${controller.orders}",
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    ClientTransactionHistory(),
-                    SizedBox(height: 40),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: CLineDivider(),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      "You must have a balance of above\n₹100 to place an order",
-                      style: Theme.of(context).textTheme.labelLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 60),
                   ],
                 ),
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.only(left: 25),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Wallet",
+                    style: Theme.of(context).textTheme.headlineLarge,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Image(
+                image: AssetImage("assets/illustrations/wallet.png"),
+                height:
+                    300, // Explicit sizing helps structure scroll views accurately
+              ),
+              const SizedBox(height: 10),
+
+              // Reactive Client Balance Output
+              Obx(
+                () => Text(
+                  "Current Balance: ₹${userdata.currentClient.value?.balance ?? 0}",
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+
+              // Real-time Order Filtering Metric Output
+              Obx(
+                () => Text(
+                  "Orders Placed: ${controller.totalOrders}",
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              const ClientTransactionHistory(),
+              const SizedBox(height: 40),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40),
+                child: CLineDivider(),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                "You must have a balance of above\n₹100 to place an order",
+                style: Theme.of(context).textTheme.labelLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 60),
+            ],
+          ),
+        ),
       ),
     );
   }

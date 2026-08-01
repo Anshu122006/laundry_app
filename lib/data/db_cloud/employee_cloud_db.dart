@@ -13,60 +13,6 @@ class EmployeeCloudDb {
   }
 
   final employees = FirebaseFirestore.instance.collection('employees');
-  // StreamSubscription? _subscription;
-
-  // Future<void> listenToChanges() async {
-  //   final box = GetStorage();
-  //   int lastSyncTime = box.read('employee_last_sync_time') ?? 0;
-
-  //   await _subscription?.cancel();
-  //   _subscription = employees
-  //       .where('updatedAt', isGreaterThan: lastSyncTime)
-  //       .snapshots()
-  //       .listen((querySnapshot) async {
-  //         int latestUpdate = lastSyncTime;
-
-  //         try {
-  //           for (var docChange in querySnapshot.docChanges) {
-  //             final data = docChange.doc.data();
-  //             if (data == null) continue;
-
-  //             final employee = Employee.fromJson(data);
-
-  //             if (employee.updatedAt > latestUpdate) {
-  //               latestUpdate = employee.updatedAt;
-  //             }
-
-  //             switch (docChange.type) {
-  //               case DocumentChangeType.added:
-  //               case DocumentChangeType.modified:
-  //                 if (!employee.deleted) {
-  //                   await EmployeeLocalDb.instance.upsertEmployee(employee);
-  //                 } else {
-  //                   await EmployeeLocalDb.instance.deleteEmployee(employee.id);
-  //                 }
-  //                 break;
-  //               case DocumentChangeType.removed:
-  //                 await EmployeeLocalDb.instance.deleteEmployee(employee.id);
-  //                 break;
-  //             }
-  //           }
-
-  //           EmployeeController.instance.scheduleUpdate();
-
-  //           box.write('employee_last_sync_time', latestUpdate);
-  //         } catch (e) {
-  //           // print('Error during employee change listener: $e');
-  //         }
-  //       });
-  // }
-
-  // Future<void> removeListner() async {
-  //   await _subscription?.cancel();
-  //   _subscription = null;
-  // }
-
-  // Employee CRUD Functions
 
   Future<String> addEmployee(Employee employee) async {
     final docRef = await employees.add(employee.toMap());

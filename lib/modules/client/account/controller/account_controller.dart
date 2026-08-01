@@ -45,8 +45,6 @@ class ClientAccountController extends GetxController {
           room: room.value,
           balance: userdata.currentClient.value?.balance ?? 0,
           updatedAt: 0,
-          deleted: false,
-          // fcmTokens: userdata.currentClient.value?.fcmTokens ?? [],
         );
 
         userdata.currentClient.value = client;
@@ -58,8 +56,6 @@ class ClientAccountController extends GetxController {
           hostel: hostel.value,
           room: room.value,
           balance: userdata.currentClient.value?.balance ?? 0,
-          deleted: false,
-          // fcmTokens: userdata.currentClient.value?.fcmTokens ?? [],
         );
       } else {
         CDeviceHelper.showSnackbar("Error", data["error"], CIcons.errorCross);

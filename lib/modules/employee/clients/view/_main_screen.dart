@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:laundary_app/data/models/client.dart';
-import 'package:laundary_app/modules/employee/clients/controller/client_controller.dart';
+import 'package:laundary_app/modules/employee/clients/controller/client_screen_controller.dart';
 import 'package:laundary_app/modules/employee/clients/widgets/client_tile.dart';
 import 'package:laundary_app/modules/employee/clients/widgets/clients_header.dart';
 
@@ -19,54 +19,53 @@ class ClientsListScreen extends StatelessWidget {
           headerSliverBuilder: (_, __) => ClientListHeader.getHeader(context),
           body: TabBarView(
             children: [
+              // Tab 1: All Clients
               Obx(() {
-                List<Client> clients =
-                    controller.filteredClients
-                        .map((client) => client.value)
-                        .toList();
+                final List<Rx<Client>> clients = controller.filteredClients;
                 return Transform.translate(
-                  offset: Offset(0, -25),
+                  offset: const Offset(0, -25),
                   child: ListView.builder(
                     itemCount: clients.length,
-                    itemBuilder:
-                        (_, index) =>
-                            ClientTile(client: clients[index], index: controller.indexof(clients[index])),
+                    itemBuilder: (_, index) {
+                      final currentId = clients[index].value.id;
+                      return ClientTile(clientId: currentId, index: index);
+                    },
                   ),
                 );
               }),
 
+              // Tab 2: Credit Balances
               Obx(() {
-                List<Client> clients =
+                final List<Rx<Client>> creditClients =
                     controller.filteredClients
-                        .map((client) => client.value)
-                        .where((client) => client.balance > 0)
+                        .where((client) => client.value.balance > 0)
                         .toList();
                 return Transform.translate(
-                  offset: Offset(0, -25),
+                  offset: const Offset(0, -25),
                   child: ListView.builder(
-                    itemCount: clients.length,
-                    itemBuilder:
-                        (_, index) =>
-                            ClientTile(client: clients[index], index: controller.indexof(clients[index]),
-                        ),
+                    itemCount: creditClients.length,
+                    itemBuilder: (_, index) {
+                      final currentId = creditClients[index].value.id;
+                      return ClientTile(clientId: currentId, index: index);
+                    },
                   ),
                 );
               }),
 
+              // Tab 3: Debit Balances
               Obx(() {
-                List<Client> clients =
+                final List<Rx<Client>> debitClients =
                     controller.filteredClients
-                        .map((client) => client.value)
-                        .where((client) => client.balance < 0)
+                        .where((client) => client.value.balance < 0)
                         .toList();
                 return Transform.translate(
-                  offset: Offset(0, -25),
+                  offset: const Offset(0, -25),
                   child: ListView.builder(
-                    itemCount: clients.length,
-                    itemBuilder:
-                        (_, index) =>
-                            ClientTile(client: clients[index], index: controller.indexof(clients[index]),
-                        ),
+                    itemCount: debitClients.length,
+                    itemBuilder: (_, index) {
+                      final currentId = debitClients[index].value.id;
+                      return ClientTile(clientId: currentId, index: index);
+                    },
                   ),
                 );
               }),

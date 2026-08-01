@@ -7,8 +7,7 @@ class Client {
   final String room;
   final int balance;
   final int updatedAt;
-  final bool deleted;
-  final List<String>? fcmTokens; // Already nullable
+  final List<String>? fcmTokens;
 
   Client({
     required this.id,
@@ -19,21 +18,19 @@ class Client {
     required this.room,
     required this.balance,
     required this.updatedAt,
-    required this.deleted,
     this.fcmTokens,
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
     return Client(
-      id: json["id"],
-      name: json["name"],
-      email: json["email"],
-      phone: json["phone"],
-      hostel: json["hostel"],
-      room: json["room"],
+      id: json["id"] ?? "",
+      name: json["name"] ?? "",
+      email: json["email"] ?? "",
+      phone: json["phone"] ?? "",
+      hostel: json["hostel"] ?? "",
+      room: json["room"] ?? "",
       balance: json["balance"]?.toInt() ?? 0,
       updatedAt: json["updatedAt"]?.toInt() ?? 0,
-      deleted: json["deleted"] == 1 || json["deleted"] == true,
       fcmTokens:
           json["fcmTokens"] != null
               ? List<String>.from(json["fcmTokens"])
@@ -51,7 +48,6 @@ class Client {
       "room": room,
       "balance": balance,
       "updatedAt": updatedAt,
-      "deleted": deleted ? 1 : 0,
       "fcmTokens": fcmTokens,
     };
   }
@@ -65,7 +61,6 @@ class Client {
     String? room,
     int? balance,
     int? updatedAt,
-    bool? deleted,
     List<String>? fcmTokens,
   }) {
     return Client(
@@ -77,7 +72,6 @@ class Client {
       room: room ?? this.room,
       balance: balance ?? this.balance,
       updatedAt: updatedAt ?? this.updatedAt,
-      deleted: deleted ?? this.deleted,
       fcmTokens: fcmTokens ?? this.fcmTokens,
     );
   }
