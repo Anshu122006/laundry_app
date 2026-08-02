@@ -4,7 +4,7 @@ import 'package:laundary_app/data/models/client.dart';
 
 class LaundryTransaction {
   String id;
-  String type; // "income" or "expense"
+  String type; // "added" or "removed"
   int amount;
   int curBal;
   DateTime date;

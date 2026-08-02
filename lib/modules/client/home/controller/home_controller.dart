@@ -9,7 +9,6 @@ class ClientHomeScreenController extends GetxController {
   final RxBool isLoading = false.obs;
 
   Future<void> placeOrder(String type) async {
-    // Avoid multiple execution requests if clicked rapidly
     if (isLoading.value) return;
 
     isLoading.value = true;
@@ -21,7 +20,7 @@ class ClientHomeScreenController extends GetxController {
         CDeviceHelper.showDialog(
           title: "Error",
           message: "Insufficient balance to place a new laundry request.",
-          onConfirm: () => Get.back(), // Safely remove dialog box only
+          onConfirm: () => Get.back(),
         );
         return;
       }
@@ -40,14 +39,11 @@ class ClientHomeScreenController extends GetxController {
       );
 
       await OrderCloudDb.instance.addOrder(order);
-
-      // Clean redirect to confirmation screen bypassing home backstack history
       Get.off(() => const OrderConfirmationScreen());
     } catch (e) {
       CDeviceHelper.showDialog(
         title: "Order Failed",
-        message:
-            "An unexpected error occurred while placing your order. Please try again.",
+        message: "An unexpected error occurred while placing your order. Please try again.",
         onConfirm: () => Get.back(),
       );
     } finally {

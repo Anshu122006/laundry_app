@@ -95,7 +95,7 @@ class OrdersList extends StatelessWidget {
             order: targetOrder,
             onTap:
                 isClient
-                    ? () => Get.to(() => OrderStatusScreen(order: targetOrder))
+                    ? () => Get.to(() => OrderStatusScreen(orderId: targetOrder.id))
                     : () => Get.toNamed(
                       AppRoutes.orderDetails,
                       arguments: targetOrder,

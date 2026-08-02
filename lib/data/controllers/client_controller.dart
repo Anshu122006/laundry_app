@@ -1,47 +1,62 @@
 import 'dart:async';
-
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart'; // Make sure this is added to pubspec.yaml
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/core/utils/logging/logger.dart';
+import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
 import 'package:laundary_app/data/models/client.dart';
 
 class ClientController extends GetxController {
-  static ClientController get instance {
-    return Get.find<ClientController>();
-  }
+  static ClientController get instance => Get.find<ClientController>();
 
   final clients = <Rx<Client>>[].obs;
-
-  // Track active stream subscription so we can cancel it on close
   StreamSubscription<List<Client>>? _clientSubscription;
 
-  // Storage variables for lightning fast local disk cache mirrors
   final _storage = GetStorage();
-  static const String _storageKey = 'cached_clients';
+  static const String _storageKey = 'cached_clients_admin_v2';
+  static const String _ownerStampKey = 'cache_owner_stamp_clients_admin';
 
   static Future<void> initController() async {
     if (!Get.isRegistered<ClientController>()) {
       Get.put(ClientController(), permanent: true);
     }
-
-    // Load disk records immediately to build UI with zero layout flickering,
-    // then establish our targeted delta cloud sync hook.
     await ClientController.instance._loadLocalDataAndSync();
   }
 
   /// Synchronously bootstraps local data and hooks up the downstream delta query
   Future<void> _loadLocalDataAndSync() async {
+    final auth = AuthController.instance;
+
+    // 1. Clear memory array immediately to prevent state carryover
+    clients.clear();
+
+    // Security Gate check: Only Admin profiles should load the global client list directory
+    if (auth.userType.value != UserType.admin) {
+      AppLogger.logInfo(
+        "Skipping client directory sync: Unauthorized context.",
+      );
+      return;
+    }
+
+    // 2. FOOLPROOF OWNER VALIDATION: Stamp integrity check
+    final String? cachedOwner = _storage.read(_ownerStampKey);
+    if (cachedOwner != null && cachedOwner != 'admin_global') {
+      debugPrint(
+        "[CACHE SECURITY]: Client directory owner mismatch! Purging collision cache.",
+      );
+      _storage.remove(_storageKey);
+    }
+
     final List<dynamic>? cachedData = _storage.read(_storageKey);
     int highWatermarkTimestamp = 0;
 
-    // Step 1: Push cache data directly into the active UI state array
-    if (cachedData != null) {
+    // Step 3: Push cache data directly into the active UI state array
+    if (cachedData != null && cachedData.isNotEmpty) {
       final loadedClients =
           cachedData.map((json) {
             final client = Client.fromJson(Map<String, dynamic>.from(json));
 
-            // Track the absolute newest modification value on local storage
             if (client.updatedAt > highWatermarkTimestamp) {
               highWatermarkTimestamp = client.updatedAt;
             }
@@ -51,32 +66,32 @@ class ClientController extends GetxController {
       clients.assignAll(loadedClients);
     }
 
-    // Step 2: Establish our lightweight delta synchronization hook
+    // Step 4: Establish our lightweight delta synchronization hook
     _clientSubscription?.cancel();
-
-    // Note: Update your ClientCloudDb instance to accept a lastSyncTime integer
-    // inside the watchAllClients query method (e.g. using .where('updatedAt', isGreaterThan: lastSyncTime))
     _clientSubscription = ClientCloudDb.instance
         .watchAllClients(lastSyncTime: highWatermarkTimestamp)
         .listen(
           (incomingDeltas) {
-            if (incomingDeltas.isEmpty) return;
-
-            for (var updatedClient in incomingDeltas) {
-              final existingIndex = indexof(updatedClient.id);
-
-              if (existingIndex != -1) {
-                // Update the existing reactive element directly
-                clients[existingIndex].value = updatedClient;
+            if (incomingDeltas.isNotEmpty) {
+              if (highWatermarkTimestamp == 0) {
+                clients.assignAll(
+                  incomingDeltas.map((client) => client.obs).toList(),
+                );
               } else {
-                // Drop completely new registrations into our list model tracking
-                clients.add(updatedClient.obs);
-              }
-            }
+                for (var updatedClient in incomingDeltas) {
+                  final existingIndex = indexof(updatedClient.id);
 
-            // Finalize state modifications and write back directly down to flash storage cache
-            clients.refresh();
-            _saveToLocalDisk();
+                  if (existingIndex != -1) {
+                    clients[existingIndex].value = updatedClient;
+                  } else {
+                    clients.add(updatedClient.obs);
+                  }
+                }
+              }
+
+              clients.refresh();
+              _saveToLocalDisk();
+            }
           },
           onError: (error) {
             AppLogger.logInfo(
@@ -88,6 +103,7 @@ class ClientController extends GetxController {
 
   /// Flushes current memory items down to high speed local flash storage
   void _saveToLocalDisk() {
+    _storage.write(_ownerStampKey, 'admin_global');
     final rawDataList = clients.map((c) => c.value.toMap()).toList();
     _storage.write(_storageKey, rawDataList);
   }
@@ -140,7 +156,7 @@ class ClientController extends GetxController {
 
   @override
   void onClose() {
-    _clientSubscription?.cancel(); // Clear connection leaks
+    _clientSubscription?.cancel();
     super.onClose();
   }
 }

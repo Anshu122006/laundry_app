@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/app/routes.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
@@ -89,22 +90,28 @@ class ClientAccountController extends GetxController {
   }
 
   // Sign out from account
-  Future<void> signOut() async {
-    isLoading.value = true;
+ Future<void> signOut() async {
+  isLoading.value = true;
+  try {
+    await AuthController.instance.onLogout();
+
+    await AuthServices.instance.signoutFromGoogle();
+    await AuthServices.instance.signoutFromFirebase();
+
+    final box = GetStorage();
+    await box.erase(); 
+    Get.reset(); 
+    await Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
+  } catch (e) {
     try {
-      // await ClientCloudDb.instance.removeFcmToken();
-      await AuthController.instance.onLogout();
+      await GetStorage().erase();
+      Get.reset();
+    } catch (_) {}
 
-      await AuthServices.instance.signoutFromGoogle();
-      await AuthServices.instance.signoutFromFirebase();
-
-      await Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
-    } catch (e) {
-      await Get.offAllNamed(AppRoutes.signin);
-      await Future.delayed(Duration(seconds: 0));
-      CDeviceHelper.showSnackbar("Error", e.toString(), CIcons.errorCross);
-    } finally {
-      isLoading.value = false;
-    }
+    await Get.offAllNamed(AppRoutes.signin);
+    CDeviceHelper.showSnackbar("Error", e.toString(), CIcons.errorCross);
+  } finally {
+    isLoading.value = false;
   }
+}
 }

@@ -9,57 +9,31 @@ class ClientHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Instantiate our home screen controller inside GetX memory context
-    final controller = Get.put(ClientHomeScreenController());
+    Get.put(ClientHomeScreenController());
 
     return Scaffold(
-      body: LayoutBuilder(
-        builder:
-            (context, constraints) => SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Obx(() {
-                    // If the controller status signals a remote update/write lock, show visual overlay block
-                    return Stack(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.only(
-                                top: 1,
-                                left: 1,
-                                right: 1,
-                              ),
-                              child: const ClientHomeHeader(),
-                            ),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 15,
-                              ),
-                              child:
-                                  const CurrentOrders(), // Inside this widget, wrap elements in an Obx for live syncing
-                            ),
-                          ],
-                        ),
-                        if (controller.isLoading.value)
-                          Positioned.fill(
-                            child: Container(
-                              color: Colors.black.withOpacity(0.15),
-                              child: const Center(
-                                child: CircularProgressIndicator.adaptive(),
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  }),
-                ),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 1, left: 1, right: 1),
+                child: const ClientHomeHeader(),
               ),
-            ),
+              const SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: const CurrentOrders(),
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }

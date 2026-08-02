@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:laundary_app/core/constants/colors.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
+import 'package:laundary_app/core/utils/formatters/formatter_utility.dart';
 import 'package:laundary_app/modules/client/home/view/place_order_screen.dart';
 
 class WashCard extends StatelessWidget {
@@ -11,6 +12,9 @@ class WashCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String formattedType = CFormatter.getWashType(type);
+    String imageLink = "assets/wash_types/$formattedType.png";
+
     return GestureDetector(
       onTap: () => Get.to(() => PlaceOrderScreen(type: type)),
       child: Container(
@@ -27,7 +31,7 @@ class WashCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Image.asset(
-                "assets/icons/laundry_basket.png",
+                imageLink,
                 height: 80,
                 width: 80,
               ),

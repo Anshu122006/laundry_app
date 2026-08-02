@@ -1,15 +1,18 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:laundary_app/core/constants/icons.dart';
 import 'package:laundary_app/core/utils/device/device_utility.dart';
-import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
+import 'package:laundary_app/data/db_cloud/atomic_query_manager.dart';
 import 'package:laundary_app/data/models/client.dart';
+import 'package:laundary_app/data/models/transaction.dart';
 
 class ClientBalanceController extends GetxController {
   final TextEditingController balanceController = TextEditingController();
-  final RxBool isLoading = false.obs;
+
+  // ─── REACTIVE LOAD DRIVER ──────────────────────────────────────────────────
+  // Bind your buttons or circular loader indicators directly to the manager's state
+  RxBool get isLoading => AtomicQueryManager.instance.isProcessing;
 
   @override
   void onClose() {
@@ -21,46 +24,51 @@ class ClientBalanceController extends GetxController {
     required Client client,
     required bool add,
   }) async {
-    if (balanceController.text.trim().isEmpty) return;
+    final cleanInput = balanceController.text.trim();
+    if (cleanInput.isEmpty) return;
 
-    isLoading.value = true;
+    final double amount =
+        (double.tryParse(cleanInput) ?? 0.0) * (add ? 1.0 : -1.0);
+    if (amount == 0) return;
 
     try {
-      int amount = (int.tryParse(balanceController.text) ?? 0) * (add ? 1 : -1);
-      int newBalance = client.balance + amount;
-
-      // 1. THE SAFETY GATE: Pre-flight network check.
-      // Forces a read from the server. If offline, throws TimeoutException BEFORE queuing writes.
-      await FirebaseFirestore.instance
-          .collection('clients')
-          .doc(client.id)
-          .get(const GetOptions(source: Source.server))
-          .timeout(const Duration(seconds: 3));
-
-      // 2. Execute the atomic batch 
-      // ignore: unused_local_variable
-      final completedTx = await ClientCloudDb.instance.updateBalanceAtomic(
+      // Create the ledger model that will be pushed atomically alongside the balance change
+      final transactionRecord = LaundryTransaction(
+        id: "", // Managed internally by AtomicQueryManager
+        type: add ? "added" : "removed",
+        amount: amount.abs().toInt(),
+        curBal: 0,
+        date: DateTime.now(),
+        orderType: null, // No order context here, pure manual balance adjustment
         client: client,
-        amount: amount,
-        newBalance: newBalance,
+        updatedAt: DateTime.now().millisecondsSinceEpoch, // Fallback placeholder
       );
 
-      // 3. Only dismiss sheet after successful updates
-      if (Get.isBottomSheetOpen ?? false) Get.back();
-    } on TimeoutException catch (_) {
+      // Execute safely via the manager (handles loading bounds & 10-second timeouts natively)
+      await AtomicQueryManager.instance.adjustClientBalanceAndLogTransaction(
+        clientId: client.id,
+        balanceDelta: amount,
+        transactionModel: transactionRecord,
+      );
+
+      // Dismiss the UI sheet overlay only after successful confirmation passes
+      balanceController.clear();
+      if (Get.isBottomSheetOpen ?? false) {
+        Get.back();
+      }
+    } on TimeoutException catch (e) {
       CDeviceHelper.showSnackbar(
         "Connection Timeout",
-        "Network is too slow. Transaction cancelled safely.",
-        CIcons.errorCross
+        e.message ??
+            "Network is too slow. Transaction cancelled safely without modifications.",
+        CIcons.errorCross,
       );
     } catch (e) {
       CDeviceHelper.showSnackbar(
-        "Error",
-        "Transaction failed. Check your connection.",
-        CIcons.errorCross
+        "Transaction Aborted",
+        "Failed to modify account balance. Please verify your connection status.",
+        CIcons.errorCross,
       );
-    } finally {
-      isLoading.value = false;
     }
   }
 }

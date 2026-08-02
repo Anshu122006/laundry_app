@@ -20,12 +20,13 @@ class ClientCloudDb {
   // final transactions = FirebaseFirestore.instance.collection('transactions');
 
   Future<String> addClient(Client client, bool isClient) async {
-    final docRef = await clients.add(client.toMap());
-    await clients.doc(docRef.id).update({"id": docRef.id});
-    client = client.copyWith(id: docRef.id);
+    final docRef = clients.doc();
+    final newClient = client.copyWith(id: docRef.id);
+    await docRef.set(newClient.toMap());
     if (!isClient) {
-      ClientController.instance.addClient(client);
+      ClientController.instance.addClient(newClient);
     }
+
     return docRef.id;
   }
 
@@ -153,23 +154,20 @@ class ClientCloudDb {
     }
   }
 
-  Future<void> updateBalanceAtomic({Client? client, int? amount, int? newBalance}) async {
-  }
+  // Future<void> cleanUpDatabaseDeletedField() async {
+  //   final collection = FirebaseFirestore.instance.collection('clients');
 
-  Future<void> cleanUpDatabaseDeletedField() async {
-    final collection = FirebaseFirestore.instance.collection('clients');
+  //   // Fetch documents that still contain the deprecated property
+  //   final snapshot = await collection.where('deleted', isNull: false).get();
 
-    // Fetch documents that still contain the deprecated property
-    final snapshot = await collection.where('deleted', isNull: false).get();
+  //   final batch = FirebaseFirestore.instance.batch();
+  //   for (var doc in snapshot.docs) {
+  //     batch.update(doc.reference, {
+  //       'deleted':
+  //           FieldValue.delete(), // Completely purges the key from Firestore
+  //     });
+  //   }
 
-    final batch = FirebaseFirestore.instance.batch();
-    for (var doc in snapshot.docs) {
-      batch.update(doc.reference, {
-        'deleted':
-            FieldValue.delete(), // Completely purges the key from Firestore
-      });
-    }
-
-    await batch.commit();
-  }
+  //   await batch.commit();
+  // }
 }

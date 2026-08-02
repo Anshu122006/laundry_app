@@ -20,4 +20,8 @@ class CFormatter {
       return null;
     }
   }
+
+  static String getWashType(String type) {
+    return type.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+  }
 }

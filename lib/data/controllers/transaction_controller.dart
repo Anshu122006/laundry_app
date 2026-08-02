@@ -1,21 +1,32 @@
 import 'dart:async';
-
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/core/utils/logging/logger.dart';
+import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/db_cloud/transaction_cloud_db.dart';
 import 'package:laundary_app/data/models/transaction.dart';
 
 class TransactionController extends GetxController {
-  static TransactionController get instance {
-    return Get.find<TransactionController>();
-  }
+  static TransactionController get instance =>
+      Get.find<TransactionController>();
 
   final transactions = <Rx<LaundryTransaction>>[].obs;
   StreamSubscription<List<LaundryTransaction>>? _transactionSubscription;
 
   final _storage = GetStorage();
-  static const String _storageKey = 'cached_transactions';
+
+  // Unique identifier string representing the current owner of this session
+  String get _currentOwnerId {
+    final auth = AuthController.instance;
+    if (auth.userType.value == UserType.admin) {
+      return 'admin_global';
+    }
+    return auth.currentClient.value?.id ?? "guest";
+  }
+
+  String get _storageKey => 'cached_transactions_v2_$_currentOwnerId';
+  String get _ownerStampKey => 'cache_owner_stamp_$_currentOwnerId';
 
   static Future<void> initController() async {
     if (!Get.isRegistered<TransactionController>()) {
@@ -24,13 +35,36 @@ class TransactionController extends GetxController {
     await TransactionController.instance._loadLocalDataAndSync();
   }
 
-  /// Synchronously bootstraps local data and hooks up the real-time delta stream
   Future<void> _loadLocalDataAndSync() async {
+    final auth = AuthController.instance;
+    final bool isAdmin = auth.userType.value == UserType.admin;
+    final currentClient = auth.currentClient.value;
+
+    // 1. Clear memory array immediately to prevent state carryover between roles/profiles
+    transactions.clear();
+
+    if (!isAdmin && (currentClient == null || currentClient.id.isEmpty)) {
+      AppLogger.logInfo(
+        "Skipping transaction synchronization: Unauthenticated context.",
+      );
+      return;
+    }
+
+    // 2. 🛡️ FOOLPROOF OWNER VALIDATION:
+    // If the storage container was stamped by a different user/role, wipe it to prevent leaks.
+    final String? cachedOwner = _storage.read(_ownerStampKey);
+    if (cachedOwner != null && cachedOwner != _currentOwnerId) {
+      debugPrint(
+        "[CACHE SECURITY]: Owner mismatch detected! Purging cross-account cache collision.",
+      );
+      _storage.remove(_storageKey);
+    }
+
     final List<dynamic>? cachedData = _storage.read(_storageKey);
     int highWatermarkTimestamp = 0;
 
-    // Step 1: Load cached transactions immediately
-    if (cachedData != null) {
+    // 3. Load matching local cache context safely
+    if (cachedData != null && cachedData.isNotEmpty) {
       final loadedTransactions =
           cachedData.map((json) {
             final tx = LaundryTransaction.fromJson(
@@ -45,37 +79,46 @@ class TransactionController extends GetxController {
       transactions.assignAll(loadedTransactions);
     }
 
-    // Step 2: Sync new deltas live from the server
+    // 4. Connect targeted real-time stream subscription
     _transactionSubscription?.cancel();
     _transactionSubscription = TransactionCloudDb.instance
-        .watchTransactions(lastSyncTime: highWatermarkTimestamp)
+        .watchTransactions(
+          lastSyncTime: highWatermarkTimestamp,
+          clientId: isAdmin ? null : currentClient?.id,
+        )
         .listen(
           (incomingDeltas) {
-            if (incomingDeltas.isEmpty) return;
-
-            for (var updatedTx in incomingDeltas) {
-              final existingIndex = indexof(updatedTx.id);
-
-              if (existingIndex != -1) {
-                transactions[existingIndex].value = updatedTx;
+            if (incomingDeltas.isNotEmpty) {
+              if (highWatermarkTimestamp == 0) {
+                transactions.assignAll(
+                  incomingDeltas.map((tx) => tx.obs).toList(),
+                );
               } else {
-                transactions.add(updatedTx.obs);
-              }
-            }
+                for (var updatedTx in incomingDeltas) {
+                  final existingIndex = indexof(updatedTx.id);
 
-            transactions.refresh();
-            _saveToLocalDisk();
+                  if (existingIndex != -1) {
+                    transactions[existingIndex].value = updatedTx;
+                  } else {
+                    transactions.add(updatedTx.obs);
+                  }
+                }
+              }
+
+              transactions.refresh();
+              _saveToLocalDisk();
+            }
           },
           onError: (error) {
-            AppLogger.logInfo(
-              "Can't subscribe to the transaction delta stream: $error",
-            );
+            AppLogger.logInfo("Transaction Delta Stream Error: $error");
           },
         );
   }
 
-  /// Flushes memory logs down to flash disk
   void _saveToLocalDisk() {
+    // Stamp the storage container with the active owner fingerprint
+    _storage.write(_ownerStampKey, _currentOwnerId);
+
     final rawDataList = transactions.map((t) => t.value.toMap()).toList();
     _storage.write(_storageKey, rawDataList);
   }

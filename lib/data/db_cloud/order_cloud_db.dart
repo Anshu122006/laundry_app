@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:laundary_app/core/utils/logging/logger.dart';
 import 'package:laundary_app/data/controllers/order_controller.dart';
 import 'package:laundary_app/data/models/client.dart';
 import 'package:laundary_app/data/models/order.dart';
@@ -16,123 +17,123 @@ class OrderCloudDb {
 
   final orders = FirebaseFirestore.instance.collection('orders');
 
-  /// Streams only orders modified or created after the local cache's highest timestamp
-  Stream<List<LaundryOrder>> watchOrders({required int lastSyncTime}) {
-    return orders
-        .where('updatedAt', isGreaterThan: lastSyncTime)
-        .snapshots()
-        .map(
-          (snapshot) =>
-              snapshot.docs
-                  .map((doc) => LaundryOrder.fromJson(doc.data()))
-                  .toList(),
-        );
+  /// Streams orders created after the local cache's high watermark.
+  /// If [clientId] is provided, isolates records specifically for that user.
+  Stream<List<LaundryOrder>> watchOrders({
+    required int lastSyncTime,
+    String?
+    clientId,
+  }) {
+    // 1. Start with the base high-watermark delta query
+    Query query = orders.where('updatedAt', isGreaterThan: lastSyncTime);
+
+    // 2. Dynamically attach the client filter ONLY if it's passed down
+    if (clientId != null && clientId.isNotEmpty) {
+      query = query.where('clientId', isEqualTo: clientId);
+    }
+
+    return query.snapshots().map(
+      (snapshot) =>
+          snapshot.docs
+              .map(
+                (doc) =>
+                    LaundryOrder.fromJson(doc.data() as Map<String, dynamic>),
+              )
+              .toList(),
+    );
   }
 
   Future<String> addOrder(LaundryOrder order) async {
-    final docRef = await orders.add(order.toFirestoreMap());
-    await orders.doc(docRef.id).update({"id": docRef.id});
-    order = order.copyWith(id: docRef.id);
-    OrderController.instance.addOrder(order);
+    final docRef = orders.doc();
+    final newOrder = order.copyWith(id: docRef.id);
+    await docRef.set(newOrder.toFirestoreMap());
+    
     return docRef.id;
   }
 
   Future<void> updateOrder(LaundryOrder order) async {
     await orders.doc(order.id).update(order.toFirestoreMap());
-    OrderController.instance.updateOrder(order);
+    // OrderController.instance.updateOrder(order);
   }
 
   Future<void> deleteOrder(LaundryOrder order) async {
     await orders.doc(order.id).delete();
-    OrderController.instance.deleteOrder(order);
+    // OrderController.instance.deleteOrder(order);
   }
 
-  Future<void> processDeliveryAtomic({
-    required LaundryOrder order,
-    required Client client,
-    required int amount,
-    required int newBalance,
-  }) async {
-    final db = FirebaseFirestore.instance;
-    final batch = db.batch();
+  // Future<void> cleanUpOrdersCollection() async {
+  //   final collectionRef = FirebaseFirestore.instance.collection('orders');
+  //   final snapshot = await collectionRef.get();
 
-    final orderRef = db.collection('orders').doc(order.id);
-    final clientRef = db.collection('clients').doc(client.id);
-    final txRef = db.collection('transactions').doc(); // Auto ID
+  //   WriteBatch batch = FirebaseFirestore.instance.batch();
 
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
+  //   for (var doc in snapshot.docs) {
+  //     // If the legacy document explicitly contains the old field
+  //     if (doc.data().containsKey('deleted')) {
+  //       batch.update(doc.reference, {
+  //         // FieldValue.delete() completely scrubs the key out of the remote document record
+  //         'deleted': FieldValue.delete(),
+  //         'updatedAt': DateTime.now().millisecondsSinceEpoch,
+  //       });
+  //     }
+  //   }
 
-    final tx = LaundryTransaction(
-      id: txRef.id,
-      type: "removed",
-      orderType: order.type,
-      amount: amount.abs(),
-      curBal: newBalance,
-      client: client.copyWith(balance: newBalance),
-      date: DateTime.now(),
-      updatedAt: currentTime,
-    );
+  //   // Execute structural migrations instantly
+  //   await batch.commit();
+  //   print("Database cleanup complete! All stale order columns scrubbed.");
+  // }
 
-    // Queue updates using native Firestore mapping rules
-    batch.update(orderRef, order.toFirestoreMap());
-    batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
-    batch.set(txRef, tx.toFirestoreMap());
+  /// Purges all orders from Firestore that match the given client ID.
+  /// Automatically batches operations to safely handle lists larger than 500 documents.
+  // Future<void> purgeClientOrders() async {
+  //   const String clientId = "DO3biFNwnQtauUruU8hG";
+  //   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-    await batch.commit();
-  }
+  //   try {
+  //     // 1. Query all orders belonging to the specified client
+  //     final querySnapshot =
+  //         await firestore
+  //             .collection('orders')
+  //             .where('clientId', isEqualTo: clientId)
+  //             .get();
 
-  Future<void> processCancellationAtomic({
-    required LaundryOrder order,
-    required Client client,
-    required int amount,
-    required int newBalance,
-  }) async {
-    final db = FirebaseFirestore.instance;
-    final batch = db.batch();
+  //     if (querySnapshot.docs.isEmpty) {
+  //       AppLogger.logInfo("[PURGE INFO]: No orders found for clientId: $clientId");
+  //       return;
+  //     }
 
-    final orderRef = db.collection('orders').doc(order.id);
-    final clientRef = db.collection('clients').doc(client.id);
-    final txRef = db.collection('transactions').doc(); // Auto ID
+  //     WriteBatch batch = firestore.batch();
+  //     int counter = 0;
+  //     int totalPurged = 0;
 
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
+  //     AppLogger.logInfo(
+  //       "[PURGE INFO]: Starting order purge for client $clientId. Found ${querySnapshot.docs.length} records.",
+  //     );
 
-    final tx = LaundryTransaction(
-      id: txRef.id,
-      type: "cancelled",
-      orderType: order.type,
-      amount: amount.abs(),
-      curBal: newBalance,
-      client: client.copyWith(balance: newBalance),
-      date: DateTime.now(),
-      updatedAt: currentTime,
-    );
+  //     // 2. Stage documents for deletion in batches
+  //     for (var doc in querySnapshot.docs) {
+  //       batch.delete(doc.reference);
+  //       counter++;
+  //       totalPurged++;
 
-    batch.update(orderRef, order.toFirestoreMap());
-    batch.update(clientRef, {'balance': newBalance, 'updatedAt': currentTime});
-    batch.set(txRef, tx.toFirestoreMap());
+  //       // 3. Commit and reset batch execution context when hitting the 500 ceiling
+  //       if (counter == 500) {
+  //         await batch.commit();
+  //         batch = firestore.batch();
+  //         counter = 0;
+  //         AppLogger.logInfo("[PURGE INFO]: Progress: Committed 500 deletions...");
+  //       }
+  //     }
 
-    await batch.commit();
-  }
+  //     // Commit any remaining staged items
+  //     if (counter > 0) {
+  //       await batch.commit();
+  //     }
 
-  Future<void> cleanUpOrdersCollection() async {
-    final collectionRef = FirebaseFirestore.instance.collection('orders');
-    final snapshot = await collectionRef.get();
-
-    WriteBatch batch = FirebaseFirestore.instance.batch();
-
-    for (var doc in snapshot.docs) {
-      // If the legacy document explicitly contains the old field
-      if (doc.data().containsKey('deleted')) {
-        batch.update(doc.reference, {
-          // FieldValue.delete() completely scrubs the key out of the remote document record
-          'deleted': FieldValue.delete(),
-          'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        });
-      }
-    }
-
-    // Execute structural migrations instantly
-    await batch.commit();
-    print("Database cleanup complete! All stale order columns scrubbed.");
-  }
+  //     AppLogger.logInfo("[PURGE INFO]: Success! Total purged: $totalPurged records.");
+  //   } catch (e) {
+  //     AppLogger.logInfo("[PURGE ERROR]: Failed to purge client orders: $e");
+  //     rethrow;
+  //   }
+  // }
 }

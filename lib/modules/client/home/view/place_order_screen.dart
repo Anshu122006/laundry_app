@@ -4,6 +4,7 @@ import 'package:laundary_app/core/utils/device/device_utility.dart';
 import 'package:laundary_app/modules/client/home/controller/home_controller.dart';
 import 'package:laundary_app/shared/widgets/back_button.dart';
 import 'package:laundary_app/shared/widgets/line_divider.dart';
+import 'package:laundary_app/core/constants/colors.dart';
 
 class PlaceOrderScreen extends StatelessWidget {
   const PlaceOrderScreen({super.key, required this.type});
@@ -18,10 +19,10 @@ class PlaceOrderScreen extends StatelessWidget {
       body: LayoutBuilder(
         builder:
             (context, constraints) => ConstrainedBox(
-              constraints: BoxConstraints.expand(),
+              constraints: const BoxConstraints.expand(),
               child: Stack(
                 children: [
-                  Positioned(top: 15, left: 15, child: CBackButton()),
+                  Positioned(top: 15, left: 15, child: const CBackButton()),
                   Positioned(
                     top: 65,
                     left: 25,
@@ -33,34 +34,53 @@ class PlaceOrderScreen extends StatelessWidget {
                   Positioned(
                     top: 130,
                     left: -15,
-                    child: Image(
+                    child: const Image(
                       image: AssetImage(
                         "assets/illustrations/order_placing.png",
                       ),
                       height: 390,
                     ),
                   ),
+
+                  // ─── REACTIVE ELEVATED BUTTON MIGRATION ────────────────────────
                   Positioned(
-                    bottom: 175,
+                    bottom: 240,
                     left: 30,
                     right: 30,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (!controller.isLoading.value) {
-                          await controller.placeOrder(type);
-                        }
-                      },
-                      child: Text("Place Order"),
-                    ),
+                    child: Obx(() {
+                      final bool processing = controller.isLoading.value;
+
+                      return ElevatedButton(
+                        // Passing null completely disables the button behaviorally
+                        onPressed: processing ? null : () => controller.placeOrder(type),
+                        style: ElevatedButton.styleFrom(
+                          disabledBackgroundColor: CColors.primaryColor.withAlpha(120),
+                        ),
+                        child:
+                            processing
+                                ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                                : const Text("Place Order"),
+                      );
+                    }),
                   ),
+
                   Positioned(
-                    bottom: 130,
+                    bottom: 180,
                     left: 60,
                     right: 60,
-                    child: CLineDivider(),
+                    child: const CLineDivider(),
                   ),
                   Positioned(
-                    bottom: 40,
+                    bottom: 100,
                     left: 40,
                     child: SizedBox(
                       width: CDeviceHelper.getScreenWidth() * 0.8,
@@ -72,12 +92,6 @@ class PlaceOrderScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Obx(() {
-                  //   return CLoadingOverlay(
-                  //     isLoading: controller.isLoading.value,
-                  //   );
-                  // }),
                 ],
               ),
             ),

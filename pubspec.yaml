@@ -65,6 +65,7 @@ flutter:
     - assets/logos/
     - assets/illustrations/
     - assets/images/
+    - assets/wash_types/
   
   fonts:
     - family: DynaPuff

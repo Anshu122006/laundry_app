@@ -1,12 +1,6 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:laundary_app/core/utils/logging/logger.dart';
-import 'package:laundary_app/data/controllers/auth_controller.dart';
-import 'package:laundary_app/data/controllers/client_controller.dart';
-import 'package:laundary_app/data/models/client.dart';
-import 'package:laundary_app/data/models/transaction.dart';
 
 class Temp{
   static Temp? _instance;

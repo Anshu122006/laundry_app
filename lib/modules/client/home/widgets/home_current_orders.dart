@@ -12,37 +12,46 @@ class CurrentOrders extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      List<LaundryOrder> todayOrders =
+      // 1. Maintain a list of Rx<LaundryOrder> wrappers to keep the nodes reactive
+      final List<Rx<LaundryOrder>> todayRxOrders =
           OrderController.instance.orders
               .where((order) => CDateHelper.isToday(order.value.placedDate))
-              .map((order) => order.value)
               .toList();
-      todayOrders.sort((a, b) => b.status.value.compareTo(a.status.value));
+
+      // 2. Sort safely reading values on the fly
+      todayRxOrders.sort(
+        (a, b) => b.value.status.value.compareTo(a.value.status.value),
+      );
 
       return Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
           Text(
-            "Today's Orders (${todayOrders.length})",
+            "Today's Orders (${todayRxOrders.length})",
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           Transform.translate(
-            offset: Offset(0, -20),
+            offset: const Offset(0, -20),
             child: ListView.builder(
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: todayOrders.length,
-              itemBuilder:
-                  (_, index) => OrderTile(
-                    onTap: () async {
-                      await Get.to(
-                        () => OrderStatusScreen(order: todayOrders[index]),
-                      );
-                    },
-                    order: todayOrders[index],
+              itemCount: todayRxOrders.length,
+              itemBuilder: (_, index) {
+                final rxOrder = todayRxOrders[index];
+
+                // 3. Wrap the OrderTile in Obx so it updates when this specific order modifies
+                return Obx(
+                  () => OrderTile(
+                    onTap:
+                        () => Get.to(
+                          () => OrderStatusScreen(orderId: rxOrder.value.id),
+                        ),
+                    order: rxOrder.value, // Pass down the inner state safely
                   ),
+                );
+              },
             ),
           ),
         ],

@@ -57,7 +57,6 @@ class ClientHomeHeader extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       color: CColors.secondaryColor,
                       fontWeight: FontWeight.w500,
-                      fontFamily: CFontFamily.poppins
                     ),
                   ),
                   Obx(
@@ -65,8 +64,6 @@ class ClientHomeHeader extends StatelessWidget {
                       userdata.currentClient.value?.name ?? "",
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.headlineMedium!.copyWith(
-                            color: CColors.secondaryColor,
-                            fontFamily: CFontFamily.poppins,
                       ),
                     ),
                   ),
@@ -75,7 +72,6 @@ class ClientHomeHeader extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: CColors.secondaryColor,
                       fontWeight: FontWeight.w400,
-                      fontFamily: CFontFamily.poppins
                     ),
                   ),
                 ],

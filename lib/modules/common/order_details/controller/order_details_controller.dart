@@ -1,190 +1,127 @@
-import 'dart:async';
 import 'package:get/get.dart';
-import 'package:laundary_app/core/constants/icons.dart';
-import 'package:laundary_app/core/utils/device/device_utility.dart';
-import 'package:laundary_app/data/controllers/auth_controller.dart';
-import 'package:laundary_app/data/controllers/client_controller.dart';
 import 'package:laundary_app/data/controllers/order_controller.dart';
-import 'package:laundary_app/data/db_cloud/client_cloud_db.dart';
-import 'package:laundary_app/data/db_cloud/order_cloud_db.dart';
-import 'package:laundary_app/data/db_cloud/transaction_cloud_db.dart';
-import 'package:laundary_app/data/models/client.dart';
 import 'package:laundary_app/data/models/order.dart';
-import 'package:laundary_app/data/models/transaction.dart';
-import 'package:laundary_app/data/services/notification_service.dart';
 
 class OrderDetailsController extends GetxController {
-  OrderDetailsController(LaundryOrder initialOrder) : order = initialOrder.obs;
+  final String orderId;
+  OrderDetailsController(this.orderId);
 
-  final Rx<LaundryOrder> order;
-  final RxBool hasUpdated = false.obs;
-  Worker? _globalOrderWorker;
+  // Screen-isolated loading state for button spinners
+  final RxBool isLoading = false.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    // Bind the detail screen to listen to real-time sync updates from the parent cache stream
-    _globalOrderWorker = ever(OrderController.instance.orders, (_) {
-      final updatedRemoteOrder = OrderController.instance.getOrder(
-        order.value.id,
-      );
-      if (updatedRemoteOrder != null) {
-        order.value = updatedRemoteOrder;
-      }
-    });
+  // ─── ALIGNED MASTER LOOKUPS ────────────────────────────────────────────────
+
+  /// Dynamically extracts the exact reactive wrapper instance out of the master list.
+  /// Reading this inside an Obx creates a direct reactive link to the master stream.
+  Rx<LaundryOrder>? get rxOrder => OrderController.instance.orders
+      .firstWhereOrNull((o) => o.value.id == orderId);
+
+  /// Provides a safe fallback object for structural property builds.
+  LaundryOrder get order => rxOrder?.value ?? LaundryOrder.empty();
+
+  // ─── MUTATIONS THROUGH MASTER ENGINE ───────────────────────────────────────
+
+  void setClothes(int count) {
+    final current = order;
+    if (current.id.isNotEmpty) {
+      current.clothes = count;
+      _applyMasterUpdate(current);
+    }
   }
 
-  Future<void> _persistOrderUpdate() async {
-    try {
-      await OrderCloudDb.instance.updateOrder(order.value);
-    } catch (e) {
-      CDeviceHelper.showSnackbar(
-        "Error",
-        "Some error occurred while updating order",
-        CIcons.errorCross,
-      );
+  void setCost(int cost) {
+    final current = order;
+    if (current.id.isNotEmpty) {
+      current.cost = cost;
+      _applyMasterUpdate(current);
+    }
+  }
+
+  void setDiscount(int discount) {
+    final current = order;
+    if (current.id.isNotEmpty) {
+      current.discount = discount;
+      _applyMasterUpdate(current);
+    }
+  }
+
+  void setDeliveryDate(DateTime date) {
+    final current = order;
+    if (current.id.isNotEmpty) {
+      current.deliveryDate = date;
+      _applyMasterUpdate(current);
     }
   }
 
   Future<void> updateStatus() async {
-    final String agentId =
-        AuthController.instance.currentEmployee.value?.id ?? "";
+    final current = order;
+    if (current.id.isEmpty) return;
 
-    switch (order.value.status) {
-      case OrderStatus.pending:
-        order.value = order.value.copyWith(
-          status: OrderStatus.picked,
-          statusBeforeCancelled: OrderStatus.picked,
-          pickupAgentId: agentId,
-          pickupDate: DateTime.now(),
-        );
-        await NotificationService.instance.sendNotification(
-          order.value.clientId,
-          "picked",
-        );
-        break;
-      case OrderStatus.picked:
-        order.value = order.value.copyWith(
-          status: OrderStatus.washing,
-          statusBeforeCancelled: OrderStatus.washing,
-        );
-        break;
-      case OrderStatus.washing:
-        order.value = order.value.copyWith(
-          status: OrderStatus.ready,
-          statusBeforeCancelled: OrderStatus.ready,
-        );
-        await NotificationService.instance.sendNotification(
-          order.value.clientId,
-          "ready",
-        );
-        break;
-      case OrderStatus.ready:
-        order.value = order.value.copyWith(
-          status: OrderStatus.delivered,
-          statusBeforeCancelled: OrderStatus.delivered,
-          deliveryDate: DateTime.now(),
-          deliverAgentId: agentId,
-        );
-        break;
-      default:
-        return;
-    }
+    try {
+      isLoading.value = true;
 
-    await _persistOrderUpdate();
-  }
+      // Determine next phase based on your status helper progression
+      final nextStatus = _getNextStatus(current.status);
+      current.status = nextStatus;
 
-  Future<void> addDeliveryTransaction() async {
-    final Client? client = ClientController.instance.getClient(
-      order.value.clientId,
-    );
-    final int amount = order.value.cost - order.value.discount;
-    final int bal = (client?.balance ?? 0) - amount;
-
-    if (client != null) {
-      await ClientCloudDb.instance.updateClient(
-        clientId: client.id,
-        balance: bal,
+      // Leverage the master controller to handle UI refresh and cache updates instantly
+      _applyMasterUpdate(current);
+    } catch (e) {
+      Get.snackbar(
+        "Status Error",
+        "Failed to update order phase on the cloud.",
       );
+    } finally {
+      isLoading.value = false;
     }
-
-    await TransactionCloudDb.instance.addTransaction(
-      LaundryTransaction(
-        id: "",
-        type: "removed",
-        orderType: order.value.type,
-        amount: amount.abs(),
-        curBal: bal,
-        client: client?.copyWith(balance: bal),
-        date: DateTime.now(),
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      ),
-    );
   }
 
   Future<void> cancelOrder() async {
-    order.value = order.value.copyWith(
-      status: OrderStatus.cancelled,
-      statusBeforeCancelled: order.value.status,
-    );
+    final current = order;
+    if (current.id.isEmpty) return;
 
-    Client? client;
-    if (AuthController.instance.userType.value == UserType.client) {
-      client = AuthController.instance.currentClient.value;
-    } else {
-      client = ClientController.instance.getClient(order.value.clientId);
-    }
+    try {
+      isLoading.value = true;
+      current.status = OrderStatus.cancelled;
 
-    final int bal = client?.balance ?? 0;
-    final int amount = order.value.cost - order.value.discount;
-
-    if (client != null) {
-      await ClientCloudDb.instance.updateClient(
-        clientId: client.id,
-        balance: bal,
+      _applyMasterUpdate(current);
+    } catch (e) {
+      Get.snackbar(
+        "Cancellation Error",
+        "Failed to cancel order on the cloud.",
       );
+    } finally {
+      isLoading.value = false;
     }
-
-    await TransactionCloudDb.instance.addTransaction(
-      LaundryTransaction(
-        id: "",
-        type: "cancelled",
-        orderType: order.value.type,
-        amount: amount.abs(),
-        curBal: bal,
-        client: client?.copyWith(balance: bal),
-        date: DateTime.now(),
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      ),
-    );
-    await _persistOrderUpdate();
   }
 
-  Future<void> updateDeliveryDate(DateTime deliveryDate) async {
-    order.value = order.value.copyWith(deliveryDate: deliveryDate);
-    await _persistOrderUpdate();
+  /// Private helper that triggers the master controller's pipeline to update
+  /// UI bindings, refresh listeners, and write to local disk cache automatically.
+  void _applyMasterUpdate(LaundryOrder updatedOrder) {
+    OrderController.instance.updateOrder(updatedOrder);
+    _syncWithBackend(updatedOrder);
   }
 
-  Future<void> setClothes(int clothes) async {
-    order.value = order.value.copyWith(clothes: clothes);
-    await _persistOrderUpdate();
+  Future<void> _syncWithBackend(LaundryOrder updatedOrder) async {
+    try {
+      // await OrderCloudDb.instance.syncOrderDetails(updatedOrder.toMap());
+    } catch (e) {
+      Get.snackbar("Sync Warning", "Saved locally, but server sync failed.");
+    }
   }
 
-  Future<void> setCost(int cost) async {
-    order.value = order.value.copyWith(cost: cost);
-    await _persistOrderUpdate();
-  }
-
-  Future<void> setDiscount(int discount) async {
-    final int calculatedDiscount =
-        (order.value.cost - discount > 0) ? discount : order.value.cost;
-    order.value = order.value.copyWith(discount: calculatedDiscount);
-    await _persistOrderUpdate();
-  }
-
-  @override
-  void onClose() {
-    _globalOrderWorker?.dispose();
-    super.onClose();
+  OrderStatus _getNextStatus(OrderStatus current) {
+    switch (current) {
+      case OrderStatus.pending:
+        return OrderStatus.picked;
+      case OrderStatus.picked:
+        return OrderStatus.washing;
+      case OrderStatus.washing:
+        return OrderStatus.ready;
+      case OrderStatus.ready:
+        return OrderStatus.delivered;
+      default:
+        return current;
+    }
   }
 }

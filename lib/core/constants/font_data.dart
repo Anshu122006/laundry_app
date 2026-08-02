@@ -11,9 +11,9 @@ class CFontSizes {
   static double bodyMedium = 16;
   static double bodyLarge = 18;
 
-  static double titelSmall = 20;
-  static double titleMedium = 24;
-  static double titleLarge = 30;
+  static double titelSmall = 18;
+  static double titleMedium = 20;
+  static double titleLarge = 27;
 
   static double headlineSmall = 24;
   static double headlineMedium = 28;

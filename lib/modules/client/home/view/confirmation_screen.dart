@@ -21,12 +21,12 @@ class OrderConfirmationScreen extends StatelessWidget {
                   ),
                   Positioned(
                     top: 150,
-                    left: 0,
+                    left: 30,
                     child: Image(
                       image: AssetImage(
                         "assets/illustrations/placed_confirmation.png",
                       ),
-                      height: 250,
+                      height: 350,
                     ),
                   ),
                   Positioned(
@@ -50,11 +50,6 @@ class OrderConfirmationScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Obx(() {
-                  //   return CLoadingOverlay(
-                  //     isLoading: controller.isLoading.value,
-                  //   );
-                  // }),
                 ],
               ),
             ),

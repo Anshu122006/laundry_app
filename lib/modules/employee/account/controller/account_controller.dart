@@ -84,20 +84,23 @@ class EmployeeAccountController extends GetxController {
     return {"isvalid": true, "error": ""};
   }
 
-  Future signout() async {
+  Future<void> signout() async {
     try {
       await AuthServices.instance.signoutFromFirebase();
       await AuthController.instance.onLogout();
 
       final box = GetStorage();
-      box.remove(kSavedEmail);
-      box.remove(kSavedUserType);
+      await box.erase();
 
+      Get.reset();
       Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
-      await Future.delayed(Duration(seconds: 0));
     } catch (e) {
-      // await Get.offAllNamed(AppRoutes.signin);
-      await Future.delayed(Duration(seconds: 0));
+      try {
+        await GetStorage().erase();
+        Get.reset();
+      } catch (_) {}
+
+      Get.offAllNamed(AppRoutes.signin);
       CDeviceHelper.showSnackbar("Error", e.toString(), CIcons.errorCross);
     }
   }

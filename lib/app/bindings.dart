@@ -63,8 +63,15 @@ class PricingBinding extends Bindings {
 class OrderDetailBinding extends Bindings {
   @override
   void dependencies() {
-    final LaundryOrder order = Get.arguments as LaundryOrder;
-    Get.lazyPut<OrderDetailsController>(() => OrderDetailsController(order));
+    String orderId = '';
+
+    if (Get.arguments is LaundryOrder) {
+      orderId = (Get.arguments as LaundryOrder).id;
+    } else if (Get.arguments is String) {
+      orderId = Get.arguments as String;
+    }
+
+    Get.lazyPut(() => OrderDetailsController(orderId));
   }
 }
 

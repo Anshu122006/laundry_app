@@ -16,7 +16,7 @@ class OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 180,
+      width: 190,
       margin: EdgeInsets.only(right: 10),
       padding: EdgeInsets.all(15),
       decoration: BoxDecoration(

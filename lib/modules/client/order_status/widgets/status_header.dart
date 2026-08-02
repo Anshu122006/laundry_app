@@ -18,6 +18,8 @@ class OrderStatusHeader extends StatelessWidget {
         CAppBar(
           leading: CBackButton(),
           title: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 "Order Status",

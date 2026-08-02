@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:laundary_app/data/db_cloud/transaction_cloud_db.dart';
+import 'package:laundary_app/data/db_cloud/order_cloud_db.dart';
 import 'package:laundary_app/modules/employee/home/controller/home_controller.dart';
 import 'package:laundary_app/modules/employee/home/widgets/home_current_orders.dart';
 import 'package:laundary_app/modules/employee/home/widgets/home_header.dart';
@@ -41,7 +41,7 @@ class EmployeeHomeScreen extends StatelessWidget {
               ),
               // ElevatedButton(
               //   onPressed: () async {
-              //     await TransactionCloudDb.instance.cleanUpTransactionsCollection();
+              //     await OrderCloudDb.instance.purgeClientOrders();
               //   },
               //   child: Text("Clean Up")
               // ),
