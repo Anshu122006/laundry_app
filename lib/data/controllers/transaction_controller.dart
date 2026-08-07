@@ -55,7 +55,7 @@ class TransactionController extends GetxController {
       return;
     }
 
-    // 2. 🛡️ FOOLPROOF OWNER VALIDATION:
+    // 2. Owner validation:
     // If the storage container was stamped by a different user/role, wipe it to prevent leaks.
     final String? cachedOwner = _storage.read(_ownerStampKey);
     if (cachedOwner != null && cachedOwner != _currentOwnerId) {
@@ -68,7 +68,7 @@ class TransactionController extends GetxController {
     final List<dynamic>? cachedData = _storage.read(_storageKey);
     int highWatermarkTimestamp = 0;
 
-    // 3. Load matching local cache context safely
+    // 3. Load matching local cache context safely, or perform initial fetch from Cloud DB on first login
     if (cachedData != null && cachedData.isNotEmpty) {
       final loadedTransactions =
           cachedData.map((json) {
@@ -82,31 +82,46 @@ class TransactionController extends GetxController {
           }).toList();
 
       transactions.assignAll(loadedTransactions);
+    } else {
+      try {
+        final initialTxList = await TransactionCloudDb.instance.fetchAllTransactions(
+          clientId: isStaff ? null : currentClient?.id,
+        );
+        final loadedTransactions = initialTxList.map((tx) {
+          if (tx.updatedAt > highWatermarkTimestamp) {
+            highWatermarkTimestamp = tx.updatedAt;
+          }
+          return tx.obs;
+        }).toList();
+
+        transactions.assignAll(loadedTransactions);
+        _saveToLocalDisk();
+      } catch (e) {
+        AppLogger.logInfo("Failed to seed initial transactions: $e");
+      }
     }
 
-    // 4. Connect targeted real-time stream subscription
+    // 4. Connect targeted real-time stream subscription for new deltas
     _transactionSubscription?.cancel();
+
+    final int safeSyncTime =
+        highWatermarkTimestamp > 5000 ? highWatermarkTimestamp - 5000 : 0;
+
     _transactionSubscription = TransactionCloudDb.instance
         .watchTransactions(
-          lastSyncTime: highWatermarkTimestamp,
+          lastSyncTime: safeSyncTime,
           clientId: isStaff ? null : currentClient?.id,
         )
         .listen(
           (incomingDeltas) {
             if (incomingDeltas.isNotEmpty) {
-              if (highWatermarkTimestamp == 0) {
-                transactions.assignAll(
-                  incomingDeltas.map((tx) => tx.obs).toList(),
-                );
-              } else {
-                for (var updatedTx in incomingDeltas) {
-                  final existingIndex = indexof(updatedTx.id);
+              for (var updatedTx in incomingDeltas) {
+                final existingIndex = indexof(updatedTx.id);
 
-                  if (existingIndex != -1) {
-                    transactions[existingIndex].value = updatedTx;
-                  } else {
-                    transactions.add(updatedTx.obs);
-                  }
+                if (existingIndex != -1) {
+                  transactions[existingIndex].value = updatedTx;
+                } else {
+                  transactions.add(updatedTx.obs);
                 }
               }
 

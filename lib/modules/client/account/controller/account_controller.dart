@@ -90,28 +90,29 @@ class ClientAccountController extends GetxController {
   }
 
   // Sign out from account
- Future<void> signOut() async {
-  isLoading.value = true;
-  try {
-    await AuthController.instance.onLogout();
-
-    await AuthServices.instance.signoutFromGoogle();
-    await AuthServices.instance.signoutFromFirebase();
-
-    final box = GetStorage();
-    await box.erase(); 
-    Get.reset(); 
-    await Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
-  } catch (e) {
+  Future<void> signOut() async {
+    isLoading.value = true;
     try {
-      await GetStorage().erase();
-      Get.reset();
-    } catch (_) {}
+      await AuthController.instance.onLogout();
 
-    await Get.offAllNamed(AppRoutes.signin);
-    CDeviceHelper.showSnackbar("Error", e.toString(), CIcons.errorCross);
-  } finally {
-    isLoading.value = false;
+      await AuthServices.instance.signoutFromGoogle();
+      await AuthServices.instance.signoutFromFirebase();
+
+      final box = GetStorage();
+      await box.erase();
+
+      Get.deleteAll(force: true);
+      Get.put(AuthController(), permanent: true);
+      Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
+    } catch (e) {
+      try {
+        await GetStorage().erase();
+      } catch (_) {}
+
+      await Get.offAllNamed(AppRoutes.signin);
+      CDeviceHelper.showSnackbar("Error", e.toString(), CIcons.errorCross);
+    } finally {
+      isLoading.value = false;
+    }
   }
-}
 }

@@ -65,67 +65,84 @@ class OrderController extends GetxController {
     }
 
     final List<dynamic>? cachedData = _storage.read(_storageKey);
-    int highWatermarkTimestamp = 0;
 
-    // Step 3: Push cached data directly into memory for instant UI loading
+    // Step 3: Load completed orders from local cache, or perform initial fetch from Cloud DB on first login
     if (cachedData != null && cachedData.isNotEmpty) {
       final loadedOrders =
           cachedData.map((json) {
             final order = LaundryOrder.fromJson(
               Map<String, dynamic>.from(json),
             );
-            if (order.updatedAt > highWatermarkTimestamp) {
-              highWatermarkTimestamp = order.updatedAt;
-            }
             return order.obs;
           }).toList();
 
       orders.assignAll(loadedOrders);
+    } else {
+      try {
+        final initialOrders = await OrderCloudDb.instance.fetchAllOrders(
+          clientId: isStaff ? null : currentClient?.id,
+        );
+        for (var order in initialOrders) {
+          if (indexof(order.id) == -1) {
+            orders.add(order.obs);
+          }
+        }
+        _saveToLocalDisk();
+      } catch (e) {
+        AppLogger.logInfo("Failed to seed initial orders from cloud: $e");
+      }
     }
 
-    // Step 4: Establish the real-time delta synchronization hook
+    // Step 4: Establish the real-time stream subscription for ACTIVE orders only (non-delivered, non-cancelled)
     _orderSubscription?.cancel();
+
     _orderSubscription = OrderCloudDb.instance
-        .watchOrders(
-          lastSyncTime: highWatermarkTimestamp,
+        .watchActiveOrders(
           clientId: isStaff ? null : currentClient?.id,
         )
         .listen(
-          (incomingDeltas) {
-            if (incomingDeltas.isNotEmpty) {
-              if (highWatermarkTimestamp == 0) {
-                orders.assignAll(
-                  incomingDeltas.map((order) => order.obs).toList(),
-                );
-              } else {
-                for (var updatedOrder in incomingDeltas) {
-                  final existingIndex = indexof(updatedOrder.id);
+          (incomingActiveOrders) {
+            if (incomingActiveOrders.isNotEmpty) {
+              for (var updatedOrder in incomingActiveOrders) {
+                final existingIndex = indexof(updatedOrder.id);
 
-                  if (existingIndex != -1) {
-                    orders[existingIndex].value = updatedOrder;
-                  } else {
-                    orders.add(updatedOrder.obs);
-                  }
+                if (existingIndex != -1) {
+                  orders[existingIndex].value = updatedOrder;
+                } else {
+                  orders.add(updatedOrder.obs);
+                }
+
+                // If status became delivered or cancelled, persist to local storage
+                if (updatedOrder.status == OrderStatus.delivered ||
+                    updatedOrder.status == OrderStatus.cancelled) {
+                  _saveToLocalDisk();
                 }
               }
 
               orders.refresh();
-              _saveToLocalDisk();
             }
           },
           onError: (error) {
             AppLogger.logInfo(
-              "Can't subscribe to the order delta stream: $error",
+              "Can't subscribe to active orders stream: $error",
             );
           },
         );
   }
 
-  /// Flushes current memory items down to high speed local disk storage
+  /// Flushes completed memory items (delivered & cancelled) to local disk storage
   void _saveToLocalDisk() {
     _storage.write(_ownerStampKey, _currentOwnerId);
-    final rawDataList = orders.map((o) => o.value.toMap()).toList();
-    _storage.write(_storageKey, rawDataList);
+    final completedOrders =
+        orders
+            .where(
+              (o) =>
+                  o.value.status == OrderStatus.delivered ||
+                  o.value.status == OrderStatus.cancelled,
+            )
+            .map((o) => o.value.toMap())
+            .toList();
+    _storage.write(_storageKey, completedOrders);
   }
 
   LaundryOrder? getOrder(String id) {

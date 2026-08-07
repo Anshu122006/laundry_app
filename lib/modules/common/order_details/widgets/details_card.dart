@@ -12,6 +12,37 @@ class DetailsCard extends StatelessWidget {
 
   final LaundryOrder order;
 
+  /// Helper method to safely present the NumericEditBottomSheet and process updates
+  void _showEditSheet({
+    required String title,
+    required String hintText,
+    required dynamic initialValue,
+    required Function(num) onSave,
+  }) {
+    Get.bottomSheet(
+      NumericEditBottomSheet(
+        title: title,
+        hintText: hintText,
+        initialValue: initialValue,
+        onConfirm: (val) {
+          if (val.toString().trim().isEmpty) return;
+
+          final String strValue = val.toString().trim();
+          final num? parsedVal = num.tryParse(strValue);
+
+          if (parsedVal != null) {
+            onSave(parsedVal);
+          }
+        },
+      ),
+      isScrollControlled: true,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+      ignoreSafeArea: false,
+      enableDrag: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<OrderDetailsController>();
@@ -73,17 +104,11 @@ class DetailsCard extends StatelessWidget {
             InkWell(
               onTap:
                   canEditOrder
-                      ? () => Get.bottomSheet(
-                        NumericEditBottomSheet(
-                          title: "Clothes",
-                          hintText: "Enter clothes amount",
-                          initialValue: order.clothes,
-                          onConfirm: (val) {
-                            final parsedVal =
-                                int.tryParse(val.toString()) ?? order.clothes;
-                            controller.setClothes(parsedVal);
-                          },
-                        ),
+                      ? () => _showEditSheet(
+                        title: "Clothes",
+                        hintText: "Enter clothes amount",
+                        initialValue: order.clothes,
+                        onSave: (val) => controller.setClothes(val.toInt()),
                       )
                       : null,
               child: _buildDetailRow(
@@ -111,18 +136,11 @@ class DetailsCard extends StatelessWidget {
             InkWell(
               onTap:
                   canEditOrder
-                      ? () => Get.bottomSheet(
-                        NumericEditBottomSheet(
-                          title: "Cost",
-                          hintText: "Enter cost value",
-                          initialValue: order.cost,
-                          onConfirm: (val) {
-                            final parsedVal =
-                                int.tryParse(val.toString()) ??
-                                order.cost.toInt();
-                            controller.setCost(parsedVal);
-                          },
-                        ),
+                      ? () => _showEditSheet(
+                        title: "Cost",
+                        hintText: "Enter cost value",
+                        initialValue: order.cost,
+                        onSave: (val) => controller.setCost(val.toInt()),
                       )
                       : null,
               child: _buildDetailRow(
@@ -136,18 +154,11 @@ class DetailsCard extends StatelessWidget {
             InkWell(
               onTap:
                   canEditOrder
-                      ? () => Get.bottomSheet(
-                        NumericEditBottomSheet(
-                          title: "Discount",
-                          hintText: "Enter discount value",
-                          initialValue: order.discount,
-                          onConfirm: (val) {
-                            final parsedVal =
-                                int.tryParse(val.toString()) ??
-                                order.discount.toInt();
-                            controller.setDiscount(parsedVal);
-                          },
-                        ),
+                      ? () => _showEditSheet(
+                        title: "Discount",
+                        hintText: "Enter discount value",
+                        initialValue: order.discount,
+                        onSave: (val) => controller.setDiscount(val.toInt()),
                       )
                       : null,
               child: _buildDetailRow(
@@ -191,7 +202,7 @@ class DetailsCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left Side: Label + Optional Edit Icon (Fixed)
+          // Left Side: Label + Optional Edit Icon
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -208,15 +219,13 @@ class DetailsCard extends StatelessWidget {
               ],
             ],
           ),
-          // Buffer space between label and value
           const SizedBox(width: 16),
 
-          // Right Side: Scrollable Value (Takes remaining space and pushes to right)
+          // Right Side: Scrollable Value
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              reverse:
-                  true, // Automatically keeps the text right-aligned when short
+              reverse: true,
               child: Text(
                 value,
                 style: const TextStyle(fontWeight: FontWeight.w600),

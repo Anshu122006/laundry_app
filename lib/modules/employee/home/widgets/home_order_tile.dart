@@ -96,7 +96,10 @@ class HomeOrderTile extends StatelessWidget {
               padding: const EdgeInsets.all(5),
               child: ElevatedButton(
                 onPressed:
-                    () => Get.toNamed(AppRoutes.orderDetails, arguments: order),
+                    () => Get.toNamed(
+                      AppRoutes.orderDetails,
+                      arguments: order.id,
+                    ),
                 child: const Text("Check\nStatus", textAlign: TextAlign.center),
               ),
             ),

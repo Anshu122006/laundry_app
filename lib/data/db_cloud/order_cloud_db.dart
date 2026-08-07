@@ -13,6 +13,43 @@ class OrderCloudDb {
 
   final orders = FirebaseFirestore.instance.collection('orders');
 
+  /// Fetches all orders once from Firestore (used for initial login seeding).
+  Future<List<LaundryOrder>> fetchAllOrders({String? clientId}) async {
+    Query query = orders;
+    if (clientId != null && clientId.isNotEmpty) {
+      query = query.where('clientId', isEqualTo: clientId);
+    }
+    final snapshot = await query.get();
+    return snapshot.docs
+        .map((doc) => LaundryOrder.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Streams active orders (status NOT delivered and NOT cancelled) in real-time.
+  Stream<List<LaundryOrder>> watchActiveOrders({String? clientId}) {
+    final activeStatuses = [
+      OrderStatus.pending.toShortString(),
+      OrderStatus.picked.toShortString(),
+      OrderStatus.washing.toShortString(),
+      OrderStatus.ready.toShortString(),
+    ];
+
+    Query query = orders.where('status', whereIn: activeStatuses);
+    if (clientId != null && clientId.isNotEmpty) {
+      query = query.where('clientId', isEqualTo: clientId);
+    }
+
+    return query.snapshots().map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => LaundryOrder.fromJson(
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
+        );
+  }
+
   /// Streams orders created after the local cache's high watermark.
   /// If [clientId] is provided, isolates records specifically for that user.
   Stream<List<LaundryOrder>> watchOrders({

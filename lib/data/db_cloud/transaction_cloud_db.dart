@@ -15,6 +15,24 @@ class TransactionCloudDb {
 
   final transactions = FirebaseFirestore.instance.collection('transactions');
 
+  /// Fetches all transactions once from Firestore (used during initial login seeding).
+  Future<List<LaundryTransaction>> fetchAllTransactions({
+    String? clientId,
+  }) async {
+    Query query = transactions;
+    if (clientId != null && clientId.isNotEmpty) {
+      query = query.where('client.id', isEqualTo: clientId);
+    }
+    final snapshot = await query.get();
+    return snapshot.docs
+        .map(
+          (doc) => LaundryTransaction.fromJson(
+            doc.data() as Map<String, dynamic>,
+          ),
+        )
+        .toList();
+  }
+
   /// Streams only transactions created after the local cache's high watermark
   Stream<List<LaundryTransaction>> watchTransactions({
     required int lastSyncTime,

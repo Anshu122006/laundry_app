@@ -92,12 +92,12 @@ class EmployeeAccountController extends GetxController {
       final box = GetStorage();
       await box.erase();
 
-      Get.reset();
+      Get.deleteAll(force: true);
+      Get.put(AuthController(), permanent: true);
       Get.offAllNamed(AppRoutes.signin, arguments: {"showMessage": true});
     } catch (e) {
       try {
         await GetStorage().erase();
-        Get.reset();
       } catch (_) {}
 
       Get.offAllNamed(AppRoutes.signin);

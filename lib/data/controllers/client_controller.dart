@@ -39,7 +39,7 @@ class ClientController extends GetxController {
       return;
     }
 
-    // 2. FOOLPROOF OWNER VALIDATION: Stamp integrity check
+    // 2. Owner validation: Stamp integrity check
     final String? cachedOwner = _storage.read(_ownerStampKey);
     if (cachedOwner != null && cachedOwner != 'admin_global') {
       debugPrint(
@@ -68,24 +68,24 @@ class ClientController extends GetxController {
 
     // Step 4: Establish our lightweight delta synchronization hook
     _clientSubscription?.cancel();
+
+    // Apply a 5-second buffer (5000 ms) to guard against clock skew and race conditions
+    final int safeSyncTime =
+        highWatermarkTimestamp > 5000 ? highWatermarkTimestamp - 5000 : 0;
+
     _clientSubscription = ClientCloudDb.instance
-        .watchAllClients(lastSyncTime: highWatermarkTimestamp)
+        .watchAllClients(lastSyncTime: safeSyncTime)
         .listen(
           (incomingDeltas) {
             if (incomingDeltas.isNotEmpty) {
-              if (highWatermarkTimestamp == 0) {
-                clients.assignAll(
-                  incomingDeltas.map((client) => client.obs).toList(),
-                );
-              } else {
-                for (var updatedClient in incomingDeltas) {
-                  final existingIndex = indexof(updatedClient.id);
+              // Uniformly upsert incoming updates without wiping existing memory state
+              for (var updatedClient in incomingDeltas) {
+                final existingIndex = indexof(updatedClient.id);
 
-                  if (existingIndex != -1) {
-                    clients[existingIndex].value = updatedClient;
-                  } else {
-                    clients.add(updatedClient.obs);
-                  }
+                if (existingIndex != -1) {
+                  clients[existingIndex].value = updatedClient;
+                } else {
+                  clients.add(updatedClient.obs);
                 }
               }
 
