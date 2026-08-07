@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/data/db_cloud/wash_type_cloud_db.dart';
 import 'package:laundary_app/data/models/wash_type.dart';
 
@@ -10,21 +11,39 @@ class WashTypeController extends GetxController {
   }
 
   final washTypes = <Rx<WashType>>[].obs;
+  static const String _storageKey = 'cached_wash_types_v1';
 
   static Future<void> initController() async {
     if (!Get.isRegistered<WashTypeController>()) {
       Get.put(WashTypeController(), permanent: true);
     }
 
-    List<WashType> types = await WashTypeCloudDb.instance.getAllWashTypes();
-    WashTypeController.instance.washTypes.value =
-        types.map((t) => t.obs).toList();
+    final storage = GetStorage();
+    final List<dynamic>? cachedData = storage.read(_storageKey);
+
+    if (cachedData != null && cachedData.isNotEmpty) {
+      final cachedTypes = cachedData
+          .map(
+            (json) => WashType.fromJson(Map<String, dynamic>.from(json)).obs,
+          )
+          .toList();
+      WashTypeController.instance.washTypes.value = cachedTypes;
+    } else {
+      await WashTypeController.instance.syncData();
+    }
   }
 
   Future<void> syncData() async {
     List<WashType> types = await WashTypeCloudDb.instance.getAllWashTypes();
     WashTypeController.instance.washTypes.value =
         types.map((t) => t.obs).toList();
+    _saveToDisk();
+  }
+
+  void _saveToDisk() {
+    final storage = GetStorage();
+    final rawList = washTypes.map((wt) => wt.value.toMap()).toList();
+    storage.write(_storageKey, rawList);
   }
 
   Future<void> incrementPriority(WashType washType) async {

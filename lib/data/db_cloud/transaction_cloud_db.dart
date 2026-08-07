@@ -19,11 +19,21 @@ class TransactionCloudDb {
   Stream<List<LaundryTransaction>> watchTransactions({
     required int lastSyncTime,
     String? clientId,
+    int limit = 200,
   }) {
-    Query query = transactions.where('updatedAt', isGreaterThan: lastSyncTime);
+    Query query;
 
-    if (clientId != null && clientId.isNotEmpty) {
-      query = query.where('client.id', isEqualTo: clientId);
+    if (lastSyncTime > 0) {
+      query = transactions.where('updatedAt', isGreaterThan: lastSyncTime);
+      if (clientId != null && clientId.isNotEmpty) {
+        query = query.where('client.id', isEqualTo: clientId);
+      }
+    } else {
+      if (clientId != null && clientId.isNotEmpty) {
+        query = transactions.where('client.id', isEqualTo: clientId).limit(limit);
+      } else {
+        query = transactions.limit(limit);
+      }
     }
 
     return query.snapshots().map(

@@ -21,6 +21,9 @@ class OrderController extends GetxController {
     if (auth.userType.value == UserType.admin) {
       return 'admin_global';
     }
+    if (auth.userType.value == UserType.employee) {
+      return 'employee_global';
+    }
     return auth.currentClient.value?.id ?? "guest";
   }
 
@@ -38,12 +41,14 @@ class OrderController extends GetxController {
   Future<void> _loadLocalDataAndSync() async {
     final auth = AuthController.instance;
     final bool isAdmin = auth.userType.value == UserType.admin;
+    final bool isEmployee = auth.userType.value == UserType.employee;
+    final bool isStaff = isAdmin || isEmployee;
     final currentClient = auth.currentClient.value;
 
     // 1. Clear memory array immediately to prevent state carryover between profiles
     orders.clear();
 
-    if (!isAdmin && (currentClient == null || currentClient.id.isEmpty)) {
+    if (!isStaff && (currentClient == null || currentClient.id.isEmpty)) {
       AppLogger.logInfo(
         "Skipping order synchronization: Unauthenticated context.",
       );
@@ -83,7 +88,7 @@ class OrderController extends GetxController {
     _orderSubscription = OrderCloudDb.instance
         .watchOrders(
           lastSyncTime: highWatermarkTimestamp,
-          clientId: isAdmin ? null : currentClient?.id,
+          clientId: isStaff ? null : currentClient?.id,
         )
         .listen(
           (incomingDeltas) {

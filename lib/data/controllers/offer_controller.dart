@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/data/db_cloud/offer_cloud_db.dart';
 import 'package:laundary_app/data/models/offer.dart';
 
@@ -10,6 +11,7 @@ class OfferController extends GetxController {
   }
 
   final offers = <Rx<Offer>>[].obs;
+  static const String _storageKey = 'cached_offers_v1';
 
   Timer? _debounce;
 
@@ -18,11 +20,17 @@ class OfferController extends GetxController {
       if (!Get.isRegistered<OfferController>()) {
         Get.put(OfferController(), permanent: true);
       }
-      // List<Offer> olist = await OfferLocalDb.instance.getAllOffer();
-      List<Offer> olist = await OfferCloudDb.instance.getAllOffers();
-      OfferController.instance.offers.assignAll(
-        olist.map((offer) => offer.obs).toList(),
-      );
+      final storage = GetStorage();
+      final List<dynamic>? cachedData = storage.read(_storageKey);
+
+      if (cachedData != null && cachedData.isNotEmpty) {
+        final cachedOffers = cachedData
+            .map((json) => Offer.fromJson(Map<String, dynamic>.from(json)).obs)
+            .toList();
+        OfferController.instance.offers.assignAll(cachedOffers);
+      } else {
+        await OfferController.instance.updateData();
+      }
     } catch (e) {
       // print(e);
     }
@@ -33,6 +41,13 @@ class OfferController extends GetxController {
     OfferController.instance.offers.assignAll(
       olist.map((offer) => offer.obs).toList(),
     );
+    _saveToDisk();
+  }
+
+  void _saveToDisk() {
+    final storage = GetStorage();
+    final rawList = offers.map((o) => o.value.toMap()).toList();
+    storage.write(_storageKey, rawList);
   }
 
   void scheduleUpdate() {

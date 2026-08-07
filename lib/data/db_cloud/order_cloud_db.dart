@@ -17,15 +17,22 @@ class OrderCloudDb {
   /// If [clientId] is provided, isolates records specifically for that user.
   Stream<List<LaundryOrder>> watchOrders({
     required int lastSyncTime,
-    String?
-    clientId,
+    String? clientId,
+    int limit = 200,
   }) {
-    // 1. Start with the base high-watermark delta query
-    Query query = orders.where('updatedAt', isGreaterThan: lastSyncTime);
+    Query query;
 
-    // 2. Dynamically attach the client filter ONLY if it's passed down
-    if (clientId != null && clientId.isNotEmpty) {
-      query = query.where('clientId', isEqualTo: clientId);
+    if (lastSyncTime > 0) {
+      query = orders.where('updatedAt', isGreaterThan: lastSyncTime);
+      if (clientId != null && clientId.isNotEmpty) {
+        query = query.where('clientId', isEqualTo: clientId);
+      }
+    } else {
+      if (clientId != null && clientId.isNotEmpty) {
+        query = orders.where('clientId', isEqualTo: clientId).limit(limit);
+      } else {
+        query = orders.limit(limit);
+      }
     }
 
     return query.snapshots().map(

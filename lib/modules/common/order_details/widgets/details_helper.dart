@@ -124,11 +124,13 @@ class _NumericEditBottomSheetState extends State<NumericEditBottomSheet> {
                           return "Please enter a value";
                         }
                         if (widget.isDecimal) {
-                          if (double.tryParse(value) == null)
+                          if (double.tryParse(value) == null) {
                             return "Enter a valid number";
+                          }
                         } else {
-                          if (int.tryParse(value) == null)
+                          if (int.tryParse(value) == null) {
                             return "Enter a valid count";
+                          }
                         }
                         return null;
                       },

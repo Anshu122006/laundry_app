@@ -22,6 +22,9 @@ class TransactionController extends GetxController {
     if (auth.userType.value == UserType.admin) {
       return 'admin_global';
     }
+    if (auth.userType.value == UserType.employee) {
+      return 'employee_global';
+    }
     return auth.currentClient.value?.id ?? "guest";
   }
 
@@ -38,12 +41,14 @@ class TransactionController extends GetxController {
   Future<void> _loadLocalDataAndSync() async {
     final auth = AuthController.instance;
     final bool isAdmin = auth.userType.value == UserType.admin;
+    final bool isEmployee = auth.userType.value == UserType.employee;
+    final bool isStaff = isAdmin || isEmployee;
     final currentClient = auth.currentClient.value;
 
     // 1. Clear memory array immediately to prevent state carryover between roles/profiles
     transactions.clear();
 
-    if (!isAdmin && (currentClient == null || currentClient.id.isEmpty)) {
+    if (!isStaff && (currentClient == null || currentClient.id.isEmpty)) {
       AppLogger.logInfo(
         "Skipping transaction synchronization: Unauthenticated context.",
       );
@@ -84,7 +89,7 @@ class TransactionController extends GetxController {
     _transactionSubscription = TransactionCloudDb.instance
         .watchTransactions(
           lastSyncTime: highWatermarkTimestamp,
-          clientId: isAdmin ? null : currentClient?.id,
+          clientId: isStaff ? null : currentClient?.id,
         )
         .listen(
           (incomingDeltas) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/data/controllers/auth_controller.dart';
 import 'package:laundary_app/data/db_cloud/employee_cloud_db.dart';
 import 'package:laundary_app/data/models/employee.dart';
@@ -11,29 +12,54 @@ class EmployeeController extends GetxController {
   }
 
   final employees = <Rx<Employee>>[].obs;
-
-  // Timer? _debounce;
+  static const String _storageKey = 'cached_employees_v1';
 
   static Future<void> initController() async {
     try {
       if (!Get.isRegistered<EmployeeController>()) {
         Get.put(EmployeeController(), permanent: true);
       }
-      // List<Employee> elist = await EmployeeLocalDb.instance.getAllEmployee();
-      List<Employee> elist = await EmployeeCloudDb.instance.getAllEmployees();
-      EmployeeController.instance.employees.assignAll(
-        elist
+      final storage = GetStorage();
+      final List<dynamic>? cachedData = storage.read(_storageKey);
+
+      if (cachedData != null && cachedData.isNotEmpty) {
+        final cachedEmployees = cachedData
+            .map((json) => Employee.fromJson(Map<String, dynamic>.from(json)))
             .where(
               (employee) =>
                   employee.id !=
                   AuthController.instance.currentEmployee.value?.id,
             )
             .map((employee) => employee.obs)
-            .toList(),
-      );
+            .toList();
+        EmployeeController.instance.employees.assignAll(cachedEmployees);
+      } else {
+        await EmployeeController.instance.syncData();
+      }
     } catch (e) {
       // print(e);
     }
+  }
+
+  Future<void> syncData() async {
+    List<Employee> elist = await EmployeeCloudDb.instance.getAllEmployees();
+    EmployeeController.instance.employees.assignAll(
+      elist
+          .where(
+            (employee) =>
+                employee.id !=
+                AuthController.instance.currentEmployee.value?.id,
+          )
+          .map((employee) => employee.obs)
+          .toList(),
+    );
+    _saveToDisk();
+  }
+
+  void _saveToDisk() {
+    final storage = GetStorage();
+    final rawList = employees.map((e) => e.value.toMap()).toList();
+    storage.write(_storageKey, rawList);
   }
 
   // Future<void> updateData() async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:laundary_app/data/db_cloud/pricing_cloud_db.dart';
 import 'package:laundary_app/data/models/pricing.dart';
 
@@ -10,6 +11,7 @@ class PricingController extends GetxController {
   }
 
   final pricings = <Rx<Pricing>>[].obs;
+  static const String _storageKey = 'cached_pricings_v1';
 
   Timer? _debounce;
 
@@ -18,10 +20,19 @@ class PricingController extends GetxController {
       if (!Get.isRegistered<PricingController>()) {
         Get.put(PricingController(), permanent: true);
       }
-      List<Pricing> plist = await PricingCloudDb.instance.getAllPricings();
-      PricingController.instance.pricings.assignAll(
-        plist.map((pricing) => pricing.obs).toList(),
-      );
+      final storage = GetStorage();
+      final List<dynamic>? cachedData = storage.read(_storageKey);
+
+      if (cachedData != null && cachedData.isNotEmpty) {
+        final cachedPricings = cachedData
+            .map(
+              (json) => Pricing.fromJson(Map<String, dynamic>.from(json)).obs,
+            )
+            .toList();
+        PricingController.instance.pricings.assignAll(cachedPricings);
+      } else {
+        await PricingController.instance.updateData();
+      }
     } catch (e) {
       // print(e);
     }
@@ -30,6 +41,13 @@ class PricingController extends GetxController {
   Future<void> updateData() async {
     List<Pricing> plist = await PricingCloudDb.instance.getAllPricings();
     pricings.assignAll(plist.map((pricing) => pricing.obs).toList());
+    _saveToDisk();
+  }
+
+  void _saveToDisk() {
+    final storage = GetStorage();
+    final rawList = pricings.map((p) => p.value.toMap()).toList();
+    storage.write(_storageKey, rawList);
   }
 
   void scheduleUpdate() {
@@ -55,6 +73,7 @@ class PricingController extends GetxController {
 
     pricing.priority = maxPriority + 1;
     pricings.add(pricing.obs);
+    _saveToDisk();
 
     await PricingCloudDb.instance.updatePricing(pricing);
   }
@@ -64,6 +83,7 @@ class PricingController extends GetxController {
       if (pricings[i].value.id == pricing.id) {
         pricings[i] = pricing.obs;
         pricings.refresh();
+        _saveToDisk();
         break;
       }
     }
