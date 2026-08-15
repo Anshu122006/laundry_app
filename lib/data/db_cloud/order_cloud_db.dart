@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:laundary_app/core/utils/logging/logger.dart';
 import 'package:laundary_app/data/models/order.dart';
 
 class OrderCloudDb {
@@ -101,79 +102,79 @@ class OrderCloudDb {
     // OrderController.instance.deleteOrder(order);
   }
 
-  // Future<void> cleanUpOrdersCollection() async {
-  //   final collectionRef = FirebaseFirestore.instance.collection('orders');
-  //   final snapshot = await collectionRef.get();
+  Future<void> cleanUpOrdersCollection() async {
+    final collectionRef = FirebaseFirestore.instance.collection('orders');
+    final snapshot = await collectionRef.get();
 
-  //   WriteBatch batch = FirebaseFirestore.instance.batch();
+    WriteBatch batch = FirebaseFirestore.instance.batch();
 
-  //   for (var doc in snapshot.docs) {
-  //     // If the legacy document explicitly contains the old field
-  //     if (doc.data().containsKey('deleted')) {
-  //       batch.update(doc.reference, {
-  //         // FieldValue.delete() completely scrubs the key out of the remote document record
-  //         'deleted': FieldValue.delete(),
-  //         'updatedAt': DateTime.now().millisecondsSinceEpoch,
-  //       });
-  //     }
-  //   }
+    for (var doc in snapshot.docs) {
+      // If the legacy document explicitly contains the old field
+      if (doc.data().containsKey('deleted')) {
+        batch.update(doc.reference, {
+          // FieldValue.delete() completely scrubs the key out of the remote document record
+          'deleted': FieldValue.delete(),
+          'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+    }
 
-  //   // Execute structural migrations instantly
-  //   await batch.commit();
-  //   print("Database cleanup complete! All stale order columns scrubbed.");
-  // }
+    // Execute structural migrations instantly
+    await batch.commit();
+    print("Database cleanup complete! All stale order columns scrubbed.");
+  }
 
-  /// Purges all orders from Firestore that match the given client ID.
-  /// Automatically batches operations to safely handle lists larger than 500 documents.
-  // Future<void> purgeClientOrders() async {
-  //   const String clientId = "DO3biFNwnQtauUruU8hG";
-  //   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  // / Purges all orders from Firestore that match the given client ID.
+  // / Automatically batches operations to safely handle lists larger than 500 documents.
+  Future<void> purgeClientOrders() async {
+    const String clientId = "DO3biFNwnQtauUruU8hG";
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  //   try {
-  //     // 1. Query all orders belonging to the specified client
-  //     final querySnapshot =
-  //         await firestore
-  //             .collection('orders')
-  //             .where('clientId', isEqualTo: clientId)
-  //             .get();
+    try {
+      // 1. Query all orders belonging to the specified client
+      final querySnapshot =
+          await firestore
+              .collection('orders')
+              .where('clientId', isEqualTo: clientId)
+              .get();
 
-  //     if (querySnapshot.docs.isEmpty) {
-  //       AppLogger.logInfo("[PURGE INFO]: No orders found for clientId: $clientId");
-  //       return;
-  //     }
+      if (querySnapshot.docs.isEmpty) {
+        AppLogger.logInfo("[PURGE INFO]: No orders found for clientId: $clientId");
+        return;
+      }
 
-  //     WriteBatch batch = firestore.batch();
-  //     int counter = 0;
-  //     int totalPurged = 0;
+      WriteBatch batch = firestore.batch();
+      int counter = 0;
+      int totalPurged = 0;
 
-  //     AppLogger.logInfo(
-  //       "[PURGE INFO]: Starting order purge for client $clientId. Found ${querySnapshot.docs.length} records.",
-  //     );
+      AppLogger.logInfo(
+        "[PURGE INFO]: Starting order purge for client $clientId. Found ${querySnapshot.docs.length} records.",
+      );
 
-  //     // 2. Stage documents for deletion in batches
-  //     for (var doc in querySnapshot.docs) {
-  //       batch.delete(doc.reference);
-  //       counter++;
-  //       totalPurged++;
+      // 2. Stage documents for deletion in batches
+      for (var doc in querySnapshot.docs) {
+        batch.delete(doc.reference);
+        counter++;
+        totalPurged++;
 
-  //       // 3. Commit and reset batch execution context when hitting the 500 ceiling
-  //       if (counter == 500) {
-  //         await batch.commit();
-  //         batch = firestore.batch();
-  //         counter = 0;
-  //         AppLogger.logInfo("[PURGE INFO]: Progress: Committed 500 deletions...");
-  //       }
-  //     }
+        // 3. Commit and reset batch execution context when hitting the 500 ceiling
+        if (counter == 500) {
+          await batch.commit();
+          batch = firestore.batch();
+          counter = 0;
+          AppLogger.logInfo("[PURGE INFO]: Progress: Committed 500 deletions...");
+        }
+      }
 
-  //     // Commit any remaining staged items
-  //     if (counter > 0) {
-  //       await batch.commit();
-  //     }
+      // Commit any remaining staged items
+      if (counter > 0) {
+        await batch.commit();
+      }
 
-  //     AppLogger.logInfo("[PURGE INFO]: Success! Total purged: $totalPurged records.");
-  //   } catch (e) {
-  //     AppLogger.logInfo("[PURGE ERROR]: Failed to purge client orders: $e");
-  //     rethrow;
-  //   }
-  // }
+      AppLogger.logInfo("[PURGE INFO]: Success! Total purged: $totalPurged records.");
+    } catch (e) {
+      AppLogger.logInfo("[PURGE ERROR]: Failed to purge client orders: $e");
+      rethrow;
+    }
+  }
 }

@@ -97,12 +97,9 @@ class ClientCloudDb {
     return null;
   }
 
-  /// REAL-TIME / OPTIMIZED: Listens to clients updates dynamically.
-  /// Admin panels should listen to this stream rather than triggering one-off future loops.
-  Stream<List<Client>> watchAllClients({required int lastSyncTime}) {
+  Stream<List<Client>> watchAllClients() {
     return FirebaseFirestore.instance
         .collection('clients')
-        .where('updatedAt', isGreaterThan: lastSyncTime)
         .snapshots()
         .map(
           (snapshot) =>

@@ -7,9 +7,11 @@ class EmployeeHomeController extends GetxController {
   // Computed values are driven reactively from OrderController.instance.orders
   
   List<Rx<LaundryOrder>> get recentOrders {
-    return OrderController.instance.orders
+    List<Rx<LaundryOrder>> orders = OrderController.instance.orders
         .where((order) => CDateHelper.isToday(order.value.placedDate))
         .toList();
+    orders.sort((a, b)=>b.value.placedDate.compareTo(a.value.placedDate));
+    return orders;
   }
 
   int get placed => recentOrders.length;
